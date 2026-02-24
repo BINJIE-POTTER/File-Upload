@@ -53,7 +53,7 @@ export function BlockPanel({
       <PopoverTrigger asChild>
         <button
           className={cn(
-            "no-print absolute left-0 top-1/2 -translate-y-1/2 z-10",
+            "no-print absolute left-0 inset-y-0 my-auto h-fit z-10 translate-y-0.5",
             "p-1 rounded text-gray-300 hover:text-gray-600 hover:bg-white/80",
             "transition-opacity duration-150",
             visible ? "opacity-100" : "opacity-0"
@@ -64,7 +64,7 @@ export function BlockPanel({
         </button>
       </PopoverTrigger>
 
-      <PopoverContent side="left" align="center" sideOffset={8} className="w-auto p-1.5 min-w-[9rem]">
+      <PopoverContent side="left" align="center" sideOffset={8} className="w-auto p-1.5 min-w-36">
         <div className="flex flex-col gap-px">
           {/* ── Navigation ── */}
           <PanelBtn icon={ChevronUp}   label="Move up"      onClick={onUp}  />
