@@ -1,0 +1,90 @@
+# Tech Stack
+- React 19 + TypeScript
+- Vite
+- Tailwind CSS
+- shadcn/ui components
+- React Router DOM
+
+# Component Guidelines
+
+## Import Paths
+- shadcn/ui components: `@/components/ui/[component]`
+- Custom components: `@/components/ui/customized/[component]` (only when necessary)
+- Example:
+  ```typescript
+  import { Button } from '@/components/ui/button';
+  import { CustomCard } from '@/components/ui/customized/custom-card';
+  ```
+
+## When to Create Custom Components
+Only create under `@/components/ui/customized/` when:
+- Extending shadcn/ui with new variants
+- Combining multiple shadcn components into reusable patterns
+- Business-specific UI components
+
+Otherwise, use shadcn/ui components directly.
+
+# Code Style
+
+## TypeScript
+- Use `type` for props, `interface` for extensible objects
+- Explicit return types for exported functions
+- Example:
+  ```typescript
+  type ButtonProps = { label: string; onClick: () => void };
+  export function MyButton({ label, onClick }: ButtonProps): JSX.Element { }
+  ```
+
+## React
+- Functional components with hooks
+- Named exports for components
+- Props destructuring in function signature
+- Example:
+  ```typescript
+  export function UploadPage() {
+    const [files, setFiles] = useState<File[]>([]);
+    return <div>{/* ... */}</div>;
+  }
+  ```
+
+## Styling
+- Use Tailwind utility classes
+- Use `cn()` from `@/lib/utils` for conditional classes
+- Example:
+  ```typescript
+  import { cn } from '@/lib/utils';
+  <div className={cn('base-class', isActive && 'active-class')} />
+  ```
+
+# File Structure
+- Pages: `/src/pages/[page]/index.tsx`
+- Services: `/src/service/[domain]/`
+- Types: `/src/service/type/[domain].tsx`
+- Utils: `/src/utils/[util].ts`
+- Hooks: `/src/hooks/use[Hook].ts`
+
+# Best Practices
+- Keep components small and focused (< 200 lines)
+- Extract reusable logic to custom hooks
+- Use async/await over promises
+- Handle errors with try/catch and user-friendly toasts
+- Prefer composition over inheritance
+
+# Import Order
+1. React/external libraries
+2. UI components
+3. Custom components
+4. Services/API
+5. Utils/hooks
+6. Types
+7. Styles
+
+Example:
+```typescript
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { useFileUpload } from '@/hooks/useFileUpload';
+import type { UploadConfig } from '@/service/type/upload';
+```
+

@@ -32,13 +32,20 @@ const Layout = () => {
     };
 
     return (
-        <div className="min-h-screen">
-            <NavigationMenu>
-                <NavigationMenuList>
-                    {renderRoutes(childRoutes)}
-                </NavigationMenuList>
-            </NavigationMenu>
-            <main>
+        // h-screen + flex-col: pins the root to the viewport so children can
+        // use h-full to get the remaining height below the nav bar.
+        <div className="flex flex-col h-screen">
+            {/* shrink-0: prevents NavigationMenu's internal flex-1 from expanding
+                the nav to fill the entire column height */}
+            <div className="shrink-0 border-b border-gray-100">
+                <NavigationMenu>
+                    <NavigationMenuList>
+                        {renderRoutes(childRoutes)}
+                    </NavigationMenuList>
+                </NavigationMenu>
+            </div>
+            {/* flex-1 min-h-0: fills remaining space after the nav */}
+            <main className="flex-1 min-h-0 overflow-hidden">
                 <Outlet />
             </main>
         </div>

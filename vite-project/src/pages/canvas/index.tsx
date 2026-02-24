@@ -33,6 +33,7 @@ const CanvasPage = () => {
     ctx.strokeStyle = color;
     ctx.lineWidth = width;
     ctx.lineCap = "round";
+    ctx.lineJoin = "round";
     ctx.stroke();
   };
 
