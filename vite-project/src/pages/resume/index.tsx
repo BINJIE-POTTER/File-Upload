@@ -7,10 +7,18 @@ import { Canvas  } from "./components/Canvas";
  * Covers: CE placeholders and @media print rules.
  */
 function GlobalStyles() {
-  const { color, lightColor, padding } = useResume();
+  const { color, lightColor, paddingH, paddingV } = useResume();
 
   return (
     <style>{`
+      /* ── Badge insert cursor (fake caret when panel open) ─────────────── */
+      [data-badge-cursor-marker] {
+        animation: ce-caret-blink 1s step-end infinite;
+      }
+      @keyframes ce-caret-blink {
+        50% { opacity: 0; }
+      }
+
       /* ── CE placeholder text ─────────────────────────────────────────── */
       [data-ph]:empty::before {
         content: attr(data-ph);
@@ -48,7 +56,7 @@ function GlobalStyles() {
           width: 210mm !important;
           min-height: 297mm !important;
           margin: 0 !important;
-          padding: ${padding}mm !important;
+          padding: ${paddingV}mm ${paddingH}mm !important;
           --resume-color: ${color};
           --resume-light: ${lightColor};
         }
@@ -60,6 +68,41 @@ function GlobalStyles() {
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
+
+        /* Badge: retain colours when printing */
+        [data-badge] {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        [data-badge-selected] {
+          box-shadow: none !important;
+        }
+      }
+
+      /* Badge: cursor + selection (no layout change) */
+      #resume-canvas [data-badge] {
+        cursor: pointer;
+      }
+      #resume-canvas [data-badge][data-badge-selected] {
+        box-shadow: 0 0 0 2px var(--resume-color);
+      }
+
+      /* Badge: use resume primary color when inside canvas */
+      #resume-canvas [data-badge][data-variant="default"] {
+        background: var(--resume-color) !important;
+        color: white !important;
+      }
+      #resume-canvas [data-badge][data-variant="secondary"] {
+        background: var(--resume-light) !important;
+        color: var(--resume-color) !important;
+      }
+      #resume-canvas [data-badge][data-variant="outline"] {
+        border-color: var(--resume-color) !important;
+        color: var(--resume-color) !important;
+      }
+      #resume-canvas [data-badge][data-variant="ghost"],
+      #resume-canvas [data-badge][data-variant="link"] {
+        color: var(--resume-color) !important;
       }
     `}</style>
   );

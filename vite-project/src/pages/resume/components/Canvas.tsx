@@ -1,13 +1,13 @@
 import React from "react";
 import { type Block } from "../types";
-import { useResume } from "../context";
+import { useResume, FONT_OPTIONS } from "../context";
 import { PIView    } from "../blocks/PIBlock";
 import { TitleView } from "../blocks/TitleBlock";
 import { ListView  } from "../blocks/ListBlock";
 
 /** The scrollable A4-sized resume preview. Renders all blocks in order. */
 export function Canvas() {
-  const { blocks, setBlocks, color, lightColor, padding } = useResume();
+  const { blocks, setBlocks, color, lightColor, paddingH, paddingV, font } = useResume();
 
   /** Applies patcher fn to the block with the given id (functional updater avoids stale closures) */
   const update = (id: string, fn: (cur: Block) => Block) =>
@@ -46,9 +46,10 @@ export function Canvas() {
         style={{
           width: "210mm",
           minHeight: "297mm",
-          padding: `${padding}mm`,
+          padding: `${paddingV}mm ${paddingH}mm`,
           "--resume-color": color,
           "--resume-light": lightColor,
+          fontFamily: FONT_OPTIONS.find((f) => f.id === font)?.fontFamily,
         } as React.CSSProperties}
       >
         {blocks.map((b, i) => renderBlock(b, i))}

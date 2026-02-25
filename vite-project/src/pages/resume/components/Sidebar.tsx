@@ -1,6 +1,6 @@
 import { FileDown, Plus } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
-import { useResume } from "../context";
+import { useResume, FONT_OPTIONS } from "../context";
 import { type Block } from "../types";
 
 const COLOR_PRESETS = ["#3b82f6", "#6366f1", "#10b981", "#f59e0b", "#ef4444", "#64748b"];
@@ -16,7 +16,7 @@ const BLOCK_TYPES: { type: Block["type"]; label: string; desc: string }[] = [
  * Fixed height (h-full) so it never scrolls with the canvas; overflows internally.
  */
 export function Sidebar() {
-  const { color, setColor, padding, setPadding, addBlock } = useResume();
+  const { color, setColor, paddingH, setPaddingH, paddingV, setPaddingV, font, setFont, addBlock } = useResume();
 
   return (
     <aside className="resume-sidebar no-print w-56 shrink-0 bg-white border-r border-gray-100 flex flex-col h-full overflow-y-auto">
@@ -91,19 +91,56 @@ export function Sidebar() {
             </div>
           </div>
 
-          {/* Page padding — Radix Slider colored with the current primary */}
-          <div>
-            <label className="text-xs text-gray-500 block mb-2">
-              Page Padding <span className="font-mono text-gray-400">{padding}mm</span>
-            </label>
-            {/* Override --primary so the Slider's range + thumb track the resume colour */}
-            <div style={{ "--primary": color, "--ring": color } as React.CSSProperties}>
-              <Slider
-                min={8} max={25} step={1}
-                value={[padding]}
-                onValueChange={([v]) => setPadding(v)}
-                className="[&_[data-slot=slider-range]]:bg-[var(--primary)] [&_[data-slot=slider-thumb]]:border-[var(--primary)]"
-              />
+          {/* Font style */}
+          <div className="mb-4">
+            <label className="text-xs text-gray-500 block mb-2">Font</label>
+            <div className="flex gap-1">
+              {FONT_OPTIONS.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setFont(f.id)}
+                  className={`flex-1 px-2 py-1.5 rounded text-xs transition-colors ${
+                    font === f.id ? "bg-gray-100 font-medium text-gray-800" : "text-gray-500 hover:bg-gray-50"
+                  }`}
+                  style={font === f.id ? { fontFamily: f.fontFamily } : undefined}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Page padding */}
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-gray-500 block mb-2">
+                Padding H <span className="font-mono text-gray-400">{paddingH}mm</span>
+              </label>
+              <div style={{ "--primary": color, "--ring": color } as React.CSSProperties}>
+                <Slider
+                  min={8}
+                  max={25}
+                  step={1}
+                  value={[paddingH]}
+                  onValueChange={([v]) => setPaddingH(v)}
+                  className="[&_[data-slot=slider-range]]:bg-[var(--primary)] [&_[data-slot=slider-thumb]]:border-[var(--primary)]"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 block mb-2">
+                Padding V <span className="font-mono text-gray-400">{paddingV}mm</span>
+              </label>
+              <div style={{ "--primary": color, "--ring": color } as React.CSSProperties}>
+                <Slider
+                  min={8}
+                  max={25}
+                  step={1}
+                  value={[paddingV]}
+                  onValueChange={([v]) => setPaddingV(v)}
+                  className="[&_[data-slot=slider-range]]:bg-[var(--primary)] [&_[data-slot=slider-thumb]]:border-[var(--primary)]"
+                />
+              </div>
             </div>
           </div>
         </section>

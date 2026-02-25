@@ -13,7 +13,15 @@ function BulletDot({ color }: { color: string }) {
   return (
     <span
       className="shrink-0 mt-2"
-      style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: color }}
+      style={{
+        display: "inline-block",
+        width: 6,
+        height: 6,
+        borderRadius: "50%",
+        background: color,
+        WebkitPrintColorAdjust: "exact",
+        printColorAdjust: "exact",
+      } as React.CSSProperties}
     />
   );
 }
@@ -109,7 +117,7 @@ export function ListView({
       <div className="space-y-1.5 pl-1">
         {b.items.map((item, i) => (
           // relative + pr-5: delete button is absolute so it takes no layout space
-          <div key={item.id} className="group/item relative flex items-start gap-2.5 pr-5">
+          <div key={item.id} className="group/item relative flex items-start gap-2.5">
             {b.iconType === "bullet"
               ? <BulletDot color={color} />
               : <NumberBadge n={i + 1} color={color} lightColor={lightColor} />
@@ -127,7 +135,7 @@ export function ListView({
             />
             {/* Absolute: sits at the right edge, takes no space in the flex row */}
             <button
-              className="no-print absolute right-0 top-[3px] opacity-0 group-hover/item:opacity-100 transition-opacity delay-0 group-hover/item:delay-[80ms] text-gray-300 hover:text-red-400"
+              className="no-print absolute right-[-20px] top-[5px] opacity-0 group-hover/item:opacity-100 transition-opacity delay-0 group-hover/item:delay-[80ms] text-gray-300 hover:text-red-400"
               onClick={() => set(cur => ({
                 ...(cur as ListBlock),
                 items: (cur as ListBlock).items.filter(it => it.id !== item.id),
