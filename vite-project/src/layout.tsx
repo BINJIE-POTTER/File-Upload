@@ -1,9 +1,13 @@
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu";
-import { Outlet, NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import type { RouteObject } from "react-router-dom";
 import { routes } from "./router";
 
-const Layout = () => {
+export interface LayoutProps {
+    children: React.ReactNode;
+}
+
+const Layout = ({ children }: LayoutProps) => {
     const location = useLocation();
     
     // Get the layout route (first route with children)
@@ -46,7 +50,7 @@ const Layout = () => {
             </div>
             {/* flex-1 min-h-0: fills remaining space after the nav */}
             <main className="flex-1 min-h-0 overflow-hidden">
-                <Outlet />
+                {children}
             </main>
         </div>
     )

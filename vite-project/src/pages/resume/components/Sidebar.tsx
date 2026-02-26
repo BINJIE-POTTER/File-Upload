@@ -1,7 +1,7 @@
-import { FileDown, Plus } from "lucide-react";
+import { FileDown, Plus, Sparkles, Undo2 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { useResume, FONT_OPTIONS } from "../context";
-import { type Block } from "../types";
+import { type Block, DEMO_AI_RESPONSE } from "../types";
 
 const COLOR_PRESETS = ["#3b82f6", "#6366f1", "#10b981", "#f59e0b", "#ef4444", "#64748b"];
 
@@ -16,7 +16,10 @@ const BLOCK_TYPES: { type: Block["type"]; label: string; desc: string }[] = [
  * Fixed height (h-full) so it never scrolls with the canvas; overflows internally.
  */
 export function Sidebar() {
-  const { color, setColor, paddingH, setPaddingH, paddingV, setPaddingV, font, setFont, addBlock } = useResume();
+  const { color, setColor, paddingH, setPaddingH, paddingV, setPaddingV, font, setFont, addBlock, isLoading, loadAIResponse, restoreBlocks, canRestore } = useResume();
+
+  /** Fires the demo AI flow with sample data. */
+  const handleDemoAI = () => { if (!isLoading) loadAIResponse(DEMO_AI_RESPONSE); };
 
   return (
     <aside className="resume-sidebar no-print w-56 shrink-0 bg-white border-r border-gray-100 flex flex-col h-full overflow-y-auto">
@@ -145,6 +148,31 @@ export function Sidebar() {
           </div>
         </section>
 
+      </div>
+
+      {/* ── AI Actions ── */}
+      <div className="p-4 border-t border-gray-100 shrink-0 space-y-2">
+        <button
+          onClick={handleDemoAI}
+          disabled={isLoading}
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-white text-sm font-medium transition-opacity hover:opacity-85 disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ background: color }}
+          aria-label="Demo AI resume"
+          tabIndex={0}
+        >
+          <Sparkles size={14} /> {isLoading ? "Generating…" : "Demo AI"}
+        </button>
+
+        {canRestore && (
+          <button
+            onClick={restoreBlocks}
+            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+            aria-label="Restore previous resume"
+            tabIndex={0}
+          >
+            <Undo2 size={14} /> Restore Previous
+          </button>
+        )}
       </div>
 
       {/* ── Export ── */}

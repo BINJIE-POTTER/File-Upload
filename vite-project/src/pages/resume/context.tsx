@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { type Block, DEFAULTS, mkPI, mkTitle, mkList, lighten } from "./types";
+import { type Block, type AIResumeData, DEFAULTS, mkPI, mkTitle, mkList, lighten, convertAIResponse } from "./types";
 
 const STORAGE_KEY = "resume-data";
 
@@ -61,6 +61,14 @@ type ResumeCtx = {
   font: FontId;
   setFont: (f: FontId) => void;
   addBlock: (type: Block["type"]) => void;
+  /** True while AI response is being processed. */
+  isLoading: boolean;
+  /** Converts AI JSON to blocks and replaces the current resume. */
+  loadAIResponse: (data: AIResumeData) => Promise<void>;
+  /** Restores user's previous blocks (before AI replaced them). */
+  restoreBlocks: () => void;
+  /** True when a previous snapshot exists and can be restored. */
+  canRestore: boolean;
 };
 
 const Ctx = createContext<ResumeCtx>(null!);
@@ -98,6 +106,30 @@ export function ResumeProvider({ children }: { children: React.ReactNode }) {
     setBlocks((bs) => [...bs, block]);
   }, []);
 
+  // ── AI integration state ──────────────────────────────────────────────
+  const [isLoading, setIsLoading] = useState(false);
+  /** Snapshot of blocks before AI overwrites them, enabling restore. */
+  const [prevBlocks, setPrevBlocks] = useState<Block[] | null>(null);
+
+  /** Simulates loading delay, converts AI data, and replaces blocks. */
+  const loadAIResponse = useCallback(async (data: AIResumeData) => {
+    setPrevBlocks(blocks);
+    setIsLoading(true);
+    // Simulate network latency (will be replaced by real Dify call later)
+    await new Promise((r) => setTimeout(r, 1200));
+    setBlocks(convertAIResponse(data));
+    setIsLoading(false);
+    toast.success("AI resume loaded");
+  }, [blocks]);
+
+  /** Restores the snapshot taken before the last AI load. */
+  const restoreBlocks = useCallback(() => {
+    if (!prevBlocks) return;
+    setBlocks(prevBlocks);
+    setPrevBlocks(null);
+    toast.success("Previous resume restored");
+  }, [prevBlocks]);
+
   return (
     <Ctx.Provider
       value={{
@@ -113,6 +145,10 @@ export function ResumeProvider({ children }: { children: React.ReactNode }) {
         font,
         setFont,
         addBlock,
+        isLoading,
+        loadAIResponse,
+        restoreBlocks,
+        canRestore: !!prevBlocks,
       }}
     >
       {children}
