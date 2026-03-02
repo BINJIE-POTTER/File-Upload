@@ -1,6 +1,7 @@
 import React, { useState, useRef, useLayoutEffect, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { BadgeInsertPanel, createBadgeHtml, type BadgeVariant } from "./BadgeInsertPanel";
+import { TextFormatPanel } from "./TextFormatPanel";
 import { cn } from "@/lib/utils";
 import { useResume } from "../context";
 
@@ -37,13 +38,17 @@ export function CE({
   const focusedRef = useRef(false);
   const savedRangeRef = useRef<Range | null>(null);
   const pendingSelectionAfterRef = useRef<HTMLElement | null>(null);
+  const [formatPanelOpen, setFormatPanelOpen] = useState(false);
+  const [formatPanelPos, setFormatPanelPos] = useState({ x: 0, y: 0 });
+  const savedFormatRangeRef = useRef<Range | null>(null);
+  const updateFormatPanelRef = useRef(() => {});
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => { if (ref.current) ref.current.innerHTML = html; }, []);
 
   useEffect(() => {
-    if (ref.current && !focusedRef.current && !panelOpen) ref.current.innerHTML = html;
-  }, [html, panelOpen]);
+    if (ref.current && !focusedRef.current && !panelOpen && !formatPanelOpen) ref.current.innerHTML = html;
+  }, [html, panelOpen, formatPanelOpen]);
 
   /**
    * 聚焦
@@ -94,6 +99,7 @@ export function CE({
     if (range && ref.current?.contains(range.commonAncestorContainer)) {
       editTargetRef.current = null;
       savedRangeRef.current = range;
+      setFormatPanelOpen(false);
       setPanelMode("insert");
       setEditState(null);
       setPanelPos({ x: e.clientX, y: e.clientY });
@@ -105,6 +111,7 @@ export function CE({
   const openEditPanel = (badge: HTMLElement, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    setFormatPanelOpen(false);
     editTargetRef.current = badge;
     badge.setAttribute("data-badge-selected", "true");
     const variant = toEditableVariant(badge.getAttribute("data-variant"));
@@ -121,6 +128,55 @@ export function CE({
     editTargetRef.current?.removeAttribute("data-badge-selected");
     editTargetRef.current = null;
   };
+
+  const updateFormatPanel = () => {
+    const sel = document.getSelection();
+    const el = ref.current;
+    if (!el || !sel?.rangeCount || panelOpen) return;
+    const range = sel.getRangeAt(0);
+    if (range.collapsed) {
+      setFormatPanelOpen(false);
+      savedFormatRangeRef.current = null;
+      return;
+    }
+    const anc = range.commonAncestorContainer;
+    const ancEl = anc.nodeType === 3 ? (anc as Text).parentElement : (anc as Element);
+    const inBadge = ancEl?.closest("[data-badge]");
+    if (!el.contains(anc) || inBadge) {
+      setFormatPanelOpen(false);
+      savedFormatRangeRef.current = null;
+      return;
+    }
+    savedFormatRangeRef.current = range.cloneRange();
+    const rect = range.getBoundingClientRect();
+    setFormatPanelPos({ x: rect.left + rect.width / 2, y: rect.top });
+    setFormatPanelOpen(true);
+  };
+
+  const handleFormat = (cmd: "bold" | "italic" | "color", value?: string) => {
+    const el = ref.current;
+    const r = savedFormatRangeRef.current;
+    if (!el || !r) return;
+    el.focus();
+    const sel = document.getSelection();
+    if (sel) {
+      sel.removeAllRanges();
+      sel.addRange(r);
+    }
+    if (cmd === "bold") document.execCommand("bold");
+    else if (cmd === "italic") document.execCommand("italic");
+    else if (cmd === "color" && value) document.execCommand("foreColor", false, value);
+    onCommit(el.innerHTML);
+  };
+
+  const handleFormatPanelClose = () => {
+    setFormatPanelOpen(false);
+    savedFormatRangeRef.current = null;
+  };
+
+  useEffect(() => {
+    updateFormatPanelRef.current = updateFormatPanel;
+  });
 
   /**
    * Handles the context menu event.
@@ -166,17 +222,6 @@ export function CE({
       } else {
         const r = savedRangeRef.current;
         if (!r) return;
-    const frag = range.createContextualFragment(createBadgeHtml(variant, text) + "\u200B");
-    const lastInserted = frag.lastChild ?? frag.firstChild;
-    range.insertNode(frag);
-    if (lastInserted) {
-      range.setStartAfter(lastInserted);
-      range.collapse(true);
-      const sel = document.getSelection();
-      if (sel) { sel.removeAllRanges(); sel.addRange(range); }
-    }
-    removeCursorMarker();
-
         range.setStart(r.startContainer, r.startOffset);
         range.collapse(true);
       }
@@ -246,6 +291,22 @@ export function CE({
     };
   }, [panelOpen]);
 
+  useEffect(() => {
+    if (!formatPanelOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if ((e.target as HTMLElement).closest("[data-text-format-panel]")) return;
+      handleFormatPanelClose();
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [formatPanelOpen]);
+
+  useEffect(() => {
+    const handleSelectionChange = () => updateFormatPanelRef.current();
+    document.addEventListener("selectionchange", handleSelectionChange);
+    return () => document.removeEventListener("selectionchange", handleSelectionChange);
+  }, []);
+
   const ceDiv = (
     <div
       ref={ref}
@@ -264,6 +325,7 @@ export function CE({
       } : {}}
       onFocus={handleFocus}
       onBlur={handleBlur}
+      onMouseUp={updateFormatPanel}
       onContextMenu={handleContextMenu}
       onClick={handleBadgeClick}
     />
@@ -272,6 +334,24 @@ export function CE({
   return (
     <>
       {ceDiv}
+      {formatPanelOpen &&
+        createPortal(
+          <div
+            className="fixed z-50"
+            style={{
+              left: formatPanelPos.x,
+              top: formatPanelPos.y - 8,
+              transform: "translate(-50%, -100%)",
+            }}
+          >
+            <TextFormatPanel
+              onFormat={handleFormat}
+              onClose={handleFormatPanelClose}
+              primaryColor={color}
+            />
+          </div>,
+          document.body
+        )}
       {panelOpen &&
         createPortal(
           <div
