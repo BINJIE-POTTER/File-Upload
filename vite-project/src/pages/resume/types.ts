@@ -11,24 +11,48 @@ export type Block = PIBlock | TitleBlock | ListBlock;
 // Flat, LLM-friendly JSON shape returned by Dify workflow.
 // Kept minimal so the AI only needs to produce simple key-value pairs.
 //
-// Tags use inline marker syntax inside any string field:
-//   {{text|variant}}  where variant is "default" | "secondary" | "outline"
-//   e.g. "Proficient in {{React|default}} and {{TypeScript|secondary}}"
-// The converter parses these markers into badge HTML at render time.
+// Inline markers (any string field):
+//   {{text|format}}  — format determines output:
+//     • default | secondary | outline  → badge (skill/tech tag)
+//     • bold     → <strong>
+//     • italic   → <em>
+//     • #hex     → <span style="color:#hex"> (e.g. #ef4444, #22c55e)
+//     • bold,italic | #hex,bold  → combined (comma-separated)
+//
+// Examples:
+//   "Expert in {{React|default}} and {{TypeScript|secondary}}"
+//   "{{Led|bold}} a team of 5 engineers"
+//   "{{Key achievement|#22c55e,bold}} delivered on time"
 
 export type AITagVariant = "default" | "secondary" | "outline";
 const AI_TAG_VARIANTS: AITagVariant[] = ["default", "secondary", "outline"];
 
-/** Regex matching inline tag markers: {{text|variant}}  */
-const TAG_RE = /\{\{(.+?)\|(\w+)\}\}/g;
+/** Regex: {{text|format}} */
+const AI_MARKER_RE = /\{\{(.+?)\|([^}]+)\}\}/g;
 
-/** Replaces {{text|variant}} markers with badge HTML spans. */
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+/** Parses {{text|format}} markers into HTML (badges, bold, italic, color). */
 export const parseAITags = (text: string): string =>
-  text.replace(TAG_RE, (_, tagText: string, variant: string) => {
-    const v = AI_TAG_VARIANTS.includes(variant as AITagVariant) ? variant as AITagVariant : "default";
-    const escaped = tagText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    const cls = badgeVariants({ variant: v }) + " leading-none";
-    return `<span contenteditable="false" data-badge data-variant="${v}" class="${cls}" style="vertical-align:middle;line-height:1">${escaped}</span>`;
+  text.replace(AI_MARKER_RE, (_, body: string, format: string) => {
+    const fmt = format.trim().toLowerCase();
+    const parts = fmt.split(",").map((p) => p.trim());
+    const variant = parts.find((p) => AI_TAG_VARIANTS.includes(p as AITagVariant)) as AITagVariant | undefined;
+    const bold = parts.includes("bold");
+    const italic = parts.includes("italic");
+    const color = parts.find((p) => p.startsWith("#") && /^#[0-9a-f]{6}$/i.test(p));
+    const escaped = escapeHtml(body);
+
+    if (variant) {
+      const cls = badgeVariants({ variant }) + " leading-none";
+      return `<span contenteditable="false" data-badge data-variant="${variant}" class="${cls}" style="vertical-align:middle;line-height:1">${escaped}</span>`;
+    }
+    let inner = escaped;
+    if (italic) inner = `<em>${inner}</em>`;
+    if (bold) inner = `<strong>${inner}</strong>`;
+    if (color) inner = `<span style="color:${color}">${inner}</span>`;
+    return inner;
   });
 
 export type AISection = {
@@ -89,7 +113,7 @@ export const convertAIResponse = (data: AIResumeData): Block[] => {
   return [pi, ...sectionBlocks];
 };
 
-/** Demo AI response for testing the AI → resume render pipeline (includes tag markers). */
+/** Demo AI response for testing (badges, bold, italic, color). */
 export const DEMO_AI_RESPONSE: AIResumeData = {
   name: "Alex Chen",
   lines: [
@@ -100,16 +124,16 @@ export const DEMO_AI_RESPONSE: AIResumeData = {
     {
       title: "Summary",
       items: [
-        "Full-stack engineer with 7+ years building high-traffic web applications, specializing in {{React|default}}, {{TypeScript|secondary}}, and distributed systems.",
+        "{{7+ years|bold}} building web apps. Specializing in {{React|default}}, {{TypeScript|secondary}}, {{distributed systems|italic}}.",
       ],
     },
     {
       title: "Work Experience",
       sub: "2018 – Present",
       items: [
-        "Led the redesign of Meta's internal analytics dashboard using {{React|default}} and {{GraphQL|secondary}}, reducing page load by 40%",
-        "Architected a real-time notification system on {{AWS|outline}} serving 50M+ daily active users",
-        "Mentored 5 junior engineers and established team code-review standards",
+        "{{Led|bold}} redesign of analytics dashboard using {{React|default}} and {{GraphQL|secondary}}, {{40% faster load|#22c55e,bold}}",
+        "Architected real-time system on {{AWS|outline}} serving {{50M+ users|#3b82f6}}",
+        "Mentored 5 engineers, established {{code-review standards|italic}}",
       ],
     },
     {

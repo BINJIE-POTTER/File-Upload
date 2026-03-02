@@ -63,9 +63,8 @@ type ResumeCtx = {
   addBlock: (type: Block["type"]) => void;
   /** True while AI response is being processed. */
   isLoading: boolean;
-  /** Converts AI JSON to blocks and replaces the current resume. */
   loadAIResponse: (data: AIResumeData) => Promise<void>;
-  /** Restores user's previous blocks (before AI replaced them). */
+  importFromJson: (data: AIResumeData) => void;
   restoreBlocks: () => void;
   /** True when a previous snapshot exists and can be restored. */
   canRestore: boolean;
@@ -130,6 +129,13 @@ export function ResumeProvider({ children }: { children: React.ReactNode }) {
     toast.success("Previous resume restored");
   }, [prevBlocks]);
 
+  /** Loads JSON data immediately (for manual import). */
+  const importFromJson = useCallback((data: AIResumeData) => {
+    setPrevBlocks(blocks);
+    setBlocks(convertAIResponse(data));
+    toast.success("Resume imported");
+  }, [blocks]);
+
   return (
     <Ctx.Provider
       value={{
@@ -147,6 +153,7 @@ export function ResumeProvider({ children }: { children: React.ReactNode }) {
         addBlock,
         isLoading,
         loadAIResponse,
+        importFromJson,
         restoreBlocks,
         canRestore: !!prevBlocks,
       }}
