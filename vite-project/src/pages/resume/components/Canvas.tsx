@@ -5,6 +5,7 @@ import { useResume, FONT_OPTIONS } from "../context";
 import { PIView    } from "../blocks/PIBlock";
 import { TitleView } from "../blocks/TitleBlock";
 import { ListView  } from "../blocks/ListBlock";
+import { InfoView  } from "../blocks/InfoBlock";
 
 /** The scrollable A4-sized resume preview. Renders all blocks in order. */
 export function Canvas() {
@@ -38,6 +39,7 @@ export function Canvas() {
       case "pi":    return <PIView    key={b.id} b={b} set={set} onUp={onUp} onDown={onDown} onDel={onDel} />;
       case "title": return <TitleView key={b.id} b={b} set={set} onUp={onUp} onDown={onDown} onDel={onDel} />;
       case "list":  return <ListView  key={b.id} b={b} set={set} onUp={onUp} onDown={onDown} onDel={onDel} />;
+      case "info":  return <InfoView  key={b.id} b={b} set={set} onUp={onUp} onDown={onDown} onDel={onDel} />;
     }
   };
 

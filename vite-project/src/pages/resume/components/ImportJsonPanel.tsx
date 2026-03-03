@@ -2,27 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { type AIResumeData } from "../types";
+import { type AIResumeData, validateAIResumeData } from "../types";
 
 type ImportJsonPanelProps = {
   onConfirm: (data: AIResumeData) => void;
   onClose: () => void;
-};
-
-const validateAIResumeData = (data: unknown): data is AIResumeData => {
-  if (!data || typeof data !== "object") return false;
-  const d = data as Record<string, unknown>;
-  if (typeof d.name !== "string") return false;
-  if (!Array.isArray(d.lines) || !d.lines.every((l) => typeof l === "string")) return false;
-  if (!Array.isArray(d.sections)) return false;
-  for (const s of d.sections as unknown[]) {
-    if (!s || typeof s !== "object") return false;
-    const sec = s as Record<string, unknown>;
-    if (typeof sec.title !== "string") return false;
-    if (sec.sub !== undefined && typeof sec.sub !== "string") return false;
-    if (!Array.isArray(sec.items) || !sec.items.every((i) => typeof i === "string")) return false;
-  }
-  return true;
 };
 
 export function ImportJsonPanel({ onConfirm, onClose }: ImportJsonPanelProps) {

@@ -5,7 +5,9 @@ export type PIBlock    = { id: string; type: "pi";    name: string; lines: strin
 export type TitleBlock = { id: string; type: "title"; title: string; sub: string };
 export type ListItem   = { id: string; html: string };
 export type ListBlock  = { id: string; type: "list";  iconType: "bullet" | "number"; items: ListItem[] };
-export type Block = PIBlock | TitleBlock | ListBlock;
+/** Single-line block: left section aligns start, right section aligns end. */
+export type InfoBlock  = { id: string; type: "info";  left: string; right: string };
+export type Block = PIBlock | TitleBlock | ListBlock | InfoBlock;
 
 // ── AI response types ────────────────────────────────────────────────────
 // Flat, LLM-friendly JSON shape returned by Dify workflow.
@@ -68,6 +70,23 @@ export type AIResumeData = {
   sections: AISection[];
 };
 
+/** Validates unknown data as AIResumeData. Used by ImportJsonPanel and AI chat. */
+export const validateAIResumeData = (data: unknown): data is AIResumeData => {
+  if (!data || typeof data !== "object") return false;
+  const d = data as Record<string, unknown>;
+  if (typeof d.name !== "string") return false;
+  if (!Array.isArray(d.lines) || !d.lines.every((l) => typeof l === "string")) return false;
+  if (!Array.isArray(d.sections)) return false;
+  for (const s of d.sections as unknown[]) {
+    if (!s || typeof s !== "object") return false;
+    const sec = s as Record<string, unknown>;
+    if (typeof sec.title !== "string") return false;
+    if (sec.sub !== undefined && typeof sec.sub !== "string") return false;
+    if (!Array.isArray(sec.items) || !sec.items.every((i) => typeof i === "string")) return false;
+  }
+  return true;
+};
+
 // ── Factories ─────────────────────────────────────────────────────────────
 export const uid = () => crypto.randomUUID();
 
@@ -78,6 +97,7 @@ export const mkPI = (): PIBlock => ({
 });
 export const mkTitle = (t = "Section"): TitleBlock => ({ id: uid(), type: "title", title: t, sub: "" });
 export const mkList  = (): ListBlock  => ({ id: uid(), type: "list", iconType: "bullet", items: [{ id: uid(), html: "Add an item…" }] });
+export const mkInfo  = (): InfoBlock  => ({ id: uid(), type: "info", left: "Secondary info", right: "Right-aligned" });
 
 export const DEFAULTS: Block[] = [
   { ...mkPI() },

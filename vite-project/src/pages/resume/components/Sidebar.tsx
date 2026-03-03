@@ -11,6 +11,7 @@ const BLOCK_TYPES: { type: Block["type"]; label: string; desc: string }[] = [
   { type: "pi",    label: "Personal Info",  desc: "Name, contacts & avatar"  },
   { type: "title", label: "Section Title",  desc: "Heading with divider"     },
   { type: "list",  label: "List",           desc: "Bullet or numbered items" },
+  { type: "info",  label: "Info Line",       desc: "Left & right-aligned row"  },
 ];
 
 /**

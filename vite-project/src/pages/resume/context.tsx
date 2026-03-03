@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { type Block, type AIResumeData, DEFAULTS, mkPI, mkTitle, mkList, lighten, convertAIResponse } from "./types";
+import { type Block, type AIResumeData, DEFAULTS, mkPI, mkTitle, mkList, mkInfo, lighten, convertAIResponse } from "./types";
 
 const STORAGE_KEY = "resume-data";
 
@@ -101,7 +101,7 @@ export function ResumeProvider({ children }: { children: React.ReactNode }) {
   }, [blocks, color, paddingH, paddingV, font]);
 
   const addBlock = useCallback((type: Block["type"]) => {
-    const block = type === "pi" ? mkPI() : type === "title" ? mkTitle() : mkList();
+    const block = type === "pi" ? mkPI() : type === "title" ? mkTitle() : type === "list" ? mkList() : mkInfo();
     setBlocks((bs) => [...bs, block]);
   }, []);
 

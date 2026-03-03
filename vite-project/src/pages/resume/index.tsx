@@ -1,6 +1,7 @@
 import { ResumeProvider, useResume } from "./context";
 import { Sidebar } from "./components/Sidebar";
-import { Canvas  } from "./components/Canvas";
+import { Canvas } from "./components/Canvas";
+import { FloatingAIButton } from "./components/FloatingAIButton";
 
 /**
  * Injects global CSS that reacts to colour / padding state changes.
@@ -116,6 +117,7 @@ function ResumeApp() {
       <div className="flex h-full overflow-hidden">
         <Sidebar />
         <Canvas />
+        <FloatingAIButton />
       </div>
     </>
   );
