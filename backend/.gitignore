@@ -3,5 +3,6 @@ temp/
 storage/
 *.log
 .DS_Store
-
+.env
+package-lock.json
 

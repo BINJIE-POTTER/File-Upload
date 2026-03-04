@@ -2,6 +2,7 @@ import { type Block, type InfoBlock } from "../types";
 import { CE } from "../components/CE";
 import { BlockPanel } from "../components/BlockPanel";
 import { useDebounceHover } from "../hooks";
+import { useResume } from "../context";
 
 /**
  * Single-line block with two sections:
@@ -22,6 +23,7 @@ export function InfoView({
   onDown: () => void;
   onDel: () => void;
 }) {
+  const { lightColor } = useResume();
   const { hovered, onMouseEnter, onMouseLeave } = useDebounceHover();
 
   return (
@@ -32,7 +34,10 @@ export function InfoView({
     >
       <BlockPanel onUp={onUp} onDown={onDown} onDel={onDel} visible={hovered} />
 
-      <div className="flex items-baseline justify-between gap-4 w-full min-w-0">
+      <div 
+        className="flex items-baseline justify-between gap-4 w-full min-w-0 rounded px-2"
+        style={{ backgroundColor: lightColor }}
+      >
         <div className="flex-1 min-w-0 text-left">
           <CE
             html={b.left}

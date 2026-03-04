@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Bot, Send, Sparkles, X, Trash2, GripVertical } from "lucide-react";
+import { Bot, Send, Sparkles, X, Trash2, GripVertical, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useResume } from "../context";
 import { type AIResumeData, validateAIResumeData } from "../types";
@@ -84,6 +84,8 @@ export function AIChatPanel({ onClose }: AIChatPanelProps) {
   const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const [panelSize, setPanelSize] = useState({ w: 440, h: 560 });
+  const resizeStartRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
 
   useEffect(() => {
     if (!hasLoadedFromStorage) {
@@ -217,18 +219,44 @@ export function AIChatPanel({ onClose }: AIChatPanelProps) {
     }
   };
 
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const el = panelRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    resizeStartRef.current = { x: e.clientX, y: e.clientY, w: rect.width, h: rect.height };
+    const onMove = (ev: MouseEvent) => {
+      if (!resizeStartRef.current) return;
+      const { x, y, w, h } = resizeStartRef.current;
+      const dw = x - ev.clientX;
+      const dh = y - ev.clientY;
+      setPanelSize({
+        w: Math.min(Math.max(340, w + dw), globalThis.innerWidth * 0.9),
+        h: Math.min(Math.max(400, h + dh), globalThis.innerHeight * 0.85),
+      });
+    };
+    const onUp = () => {
+      resizeStartRef.current = null;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "nwse-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  };
+
   return (
     <div
       ref={panelRef}
       className="fixed bottom-6 right-6 z-50 flex flex-col rounded-2xl border border-gray-200 bg-white shadow-2xl no-print overflow-hidden"
       style={{
-        width: "min(440px, calc(100vw - 3rem))",
-        height: "min(560px, calc(100vh - 6rem))",
-        resize: "both",
+        width: panelSize.w,
+        height: panelSize.h,
         minWidth: 340,
         minHeight: 400,
-        maxWidth: "90vw",
-        maxHeight: "85vh",
       }}
       role="dialog"
       aria-label="AI Assistant"
@@ -240,6 +268,16 @@ export function AIChatPanel({ onClose }: AIChatPanelProps) {
         style={{ background: `linear-gradient(135deg, ${color}12 0%, ${color}06 100%)` }}
       >
         <div className="flex items-center gap-3">
+          <span
+            role="button"
+            tabIndex={0}
+            onMouseDown={handleResizeStart}
+            className="cursor-nwse-resize touch-none p-0.5 -m-0.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100/80"
+            aria-label="Drag to resize"
+            title="Drag to resize"
+          >
+            <GripVertical size={16} />
+          </span>
           <div
             className="flex items-center justify-center w-9 h-9 rounded-xl"
             style={{ background: `${color}20`, color }}
@@ -263,9 +301,6 @@ export function AIChatPanel({ onClose }: AIChatPanelProps) {
               <Trash2 size={16} />
             </button>
           )}
-          <span className="text-gray-300 cursor-grab" aria-label="Resize panel" title="Drag to resize">
-            <GripVertical size={16} />
-          </span>
           <button
             type="button"
             onClick={onClose}
@@ -296,10 +331,18 @@ export function AIChatPanel({ onClose }: AIChatPanelProps) {
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            className={`flex gap-2.5 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
+            {msg.role === "assistant" && (
+              <div
+                className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: `${color}20`, color }}
+              >
+                <Bot size={16} aria-hidden />
+              </div>
+            )}
             <div
-              className={`max-w-[88%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words ${
+              className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words ${
                 msg.role === "user"
                   ? "rounded-br-md text-gray-800"
                   : "rounded-bl-md border border-gray-200 bg-white text-gray-700 shadow-sm"
@@ -308,11 +351,37 @@ export function AIChatPanel({ onClose }: AIChatPanelProps) {
             >
               {msg.content}
             </div>
+            {msg.role === "user" && (
+              <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-gray-200 text-gray-600">
+                <User size={16} aria-hidden />
+              </div>
+            )}
           </div>
         ))}
+        {isStreaming && !streamingContent && (
+          <div className="flex gap-2.5 justify-start">
+            <div
+              className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ background: `${color}20`, color }}
+            >
+              <Bot size={16} aria-hidden />
+            </div>
+            <div className="max-w-[78%] rounded-2xl rounded-bl-md px-4 py-2.5 border border-gray-200 bg-white shadow-sm flex gap-1">
+              <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+            </div>
+          </div>
+        )}
         {streamingContent && (
-          <div className="flex justify-start">
-            <div className="max-w-[88%] rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words border border-gray-200 bg-white text-gray-700 shadow-sm">
+          <div className="flex gap-2.5 justify-start">
+            <div
+              className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ background: `${color}20`, color }}
+            >
+              <Bot size={16} aria-hidden />
+            </div>
+            <div className="max-w-[78%] rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words border border-gray-200 bg-white text-gray-700 shadow-sm">
               {streamingContent}
               <span
                 className="inline-block w-2 h-4 ml-0.5 align-middle rounded-sm animate-pulse"
