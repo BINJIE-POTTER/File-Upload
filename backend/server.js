@@ -29,11 +29,11 @@ app.post("/api/dify/chat", async (req, res) => {
     return res.status(400).json({ code: "invalid_param", message: "query is required" });
   }
 
-  const user = req.body?.user ?? `user-${Date.now()}`;
+  const user = req.body?.user ?? `user-mock`;
   const body = {
     query,
     user,
-    response_mode: "streaming",
+    response_mode: "blocking",
     conversation_id: conversation_id ?? "",
     inputs,
   };
@@ -56,22 +56,18 @@ app.post("/api/dify/chat", async (req, res) => {
       });
     }
 
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.flushHeaders();
+    // Parse the JSON body — even in blocking mode Dify returns a ReadableStream
+    const data = await difyRes.json();
 
-    const reader = difyRes.body;
-    if (!reader) {
-      res.end();
-      return;
+    if (!data.conversation_id || !data.answer) {
+      return res.status(502).json({
+        code: "dify_response_error",
+        message: data.message ?? "Unexpected Dify response format",
+      });
     }
 
-    for await (const chunk of reader) {
-      res.write(chunk);
-      if (typeof res.flush === "function") res.flush();
-    }
-    res.end();
+    // Return the complete response to the frontend
+    res.json(data);
   } catch (err) {
     console.error("Dify proxy error:", err);
     res.status(500).json({

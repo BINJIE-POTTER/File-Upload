@@ -1,4 +1,4 @@
-import { ResumeProvider, useResume } from "./context";
+import { ResumeProvider, useResume, FONT_OPTIONS } from "./context";
 import { Sidebar } from "./components/Sidebar";
 import { Canvas } from "./components/Canvas";
 import { FloatingAIButton } from "./components/FloatingAIButton";
@@ -8,7 +8,8 @@ import { FloatingAIButton } from "./components/FloatingAIButton";
  * Covers: CE placeholders and @media print rules.
  */
 function GlobalStyles() {
-  const { color, lightColor, paddingH, paddingV } = useResume();
+  const { color, lightColor, paddingH, paddingV, font } = useResume();
+  const fontFamily = FONT_OPTIONS.find((f) => f.id === font)?.fontFamily;
 
   return (
     <style>{`
@@ -58,6 +59,7 @@ function GlobalStyles() {
           min-height: 297mm !important;
           margin: 0 !important;
           padding: ${paddingV}mm ${paddingH}mm !important;
+          font-family: ${fontFamily} !important;
           --resume-color: ${color};
           --resume-light: ${lightColor};
         }

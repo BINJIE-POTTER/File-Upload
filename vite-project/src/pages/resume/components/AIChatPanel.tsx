@@ -159,42 +159,15 @@ export function AIChatPanel({ onClose }: AIChatPanelProps) {
         }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message ?? `Request failed: ${res.status}`);
+        throw new Error(data.message ?? `Request failed: ${res.status}`);
       }
 
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      let fullText = "";
-      let buffer = "";
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6).trim();
-              if (!data || data === "[DONE]" || data === "[done]") continue;
-              try {
-                const obj = JSON.parse(data);
-                const isMessage = obj.event === "message" || obj.event === "agent_message";
-                if (isMessage && typeof obj.answer === "string") {
-                  fullText += obj.answer;
-                  setStreamingContent(fullText);
-                }
-                if (obj.conversation_id) setConversationId(obj.conversation_id);
-              } catch {
-                // Skip non-JSON or partial lines
-              }
-            }
-          }
-        }
-      }
+      // Blocking mode returns { event, answer, conversation_id, ... }
+      const fullText = typeof data.answer === "string" ? data.answer : "";
+      if (data.conversation_id) setConversationId(data.conversation_id);
 
       setStreamingContent("");
       setMessages((m) => [...m, { role: "assistant", content: fullText }]);

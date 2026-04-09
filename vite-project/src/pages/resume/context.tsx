@@ -5,9 +5,9 @@ import { type Block, type AIResumeData, DEFAULTS, mkPI, mkTitle, mkList, mkInfo,
 const STORAGE_KEY = "resume-data";
 
 export const FONT_OPTIONS = [
-  { id: "sans", label: "Sans", fontFamily: "ui-sans-serif, system-ui, sans-serif" },
-  { id: "serif", label: "Serif", fontFamily: "ui-serif, Georgia, Cambria, serif" },
-  { id: "mono", label: "Mono", fontFamily: "ui-monospace, 'Cascadia Code', monospace" },
+  { id: "sans", label: "Sans", fontFamily: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', ui-sans-serif, system-ui, sans-serif" },
+  { id: "serif", label: "Serif", fontFamily: "'Noto Serif SC', 'PingFang SC', 'Microsoft YaHei', ui-serif, Georgia, Cambria, serif" },
+  { id: "mono", label: "Mono", fontFamily: "'Cascadia Code', 'Fira Code', ui-monospace, monospace" },
 ] as const;
 export type FontId = (typeof FONT_OPTIONS)[number]["id"];
 
@@ -53,6 +53,7 @@ type ResumeCtx = {
   setBlocks: React.Dispatch<React.SetStateAction<Block[]>>;
   color: string;
   lightColor: string;
+  extraLightColor: string;
   setColor: (c: string) => void;
   paddingH: number;
   paddingV: number;
@@ -87,6 +88,7 @@ export function ResumeProvider({ children }: { children: React.ReactNode }) {
   const [font, setFont] = useState<FontId>(saved?.font ?? "sans");
 
   const lightColor = lighten(color, 0.85);
+  const extraLightColor = lighten(color, 0.93);
 
   const toastShownRef = useRef(false);
   useEffect(() => {
@@ -143,6 +145,7 @@ export function ResumeProvider({ children }: { children: React.ReactNode }) {
         setBlocks,
         color,
         lightColor,
+        extraLightColor,
         setColor,
         paddingH,
         paddingV,

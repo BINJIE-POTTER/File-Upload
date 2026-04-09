@@ -328,6 +328,11 @@ export function CE({
       onMouseUp={updateFormatPanel}
       onContextMenu={handleContextMenu}
       onClick={handleBadgeClick}
+      onPaste={(e) => {
+        e.preventDefault();
+        const text = e.clipboardData?.getData("text/plain") ?? "";
+        if (text) document.execCommand("insertText", false, text);
+      }}
     />
   );
 

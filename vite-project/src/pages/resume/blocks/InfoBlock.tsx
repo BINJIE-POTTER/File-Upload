@@ -23,7 +23,7 @@ export function InfoView({
   onDown: () => void;
   onDel: () => void;
 }) {
-  const { lightColor } = useResume();
+  const { extraLightColor } = useResume();
   const { hovered, onMouseEnter, onMouseLeave } = useDebounceHover();
 
   return (
@@ -35,8 +35,8 @@ export function InfoView({
       <BlockPanel onUp={onUp} onDown={onDown} onDel={onDel} visible={hovered} />
 
       <div 
-        className="flex items-baseline justify-between gap-4 w-full min-w-0 rounded px-2"
-        style={{ backgroundColor: lightColor }}
+        className="flex items-baseline justify-between gap-4 w-full min-w-0 rounded-md px-2 py-1.5"
+        style={{ backgroundColor: extraLightColor }}
       >
         <div className="flex-1 min-w-0 text-left">
           <CE
