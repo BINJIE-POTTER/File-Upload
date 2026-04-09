@@ -1,21 +1,38 @@
 import React from "react";
 import { Loader2 } from "lucide-react";
 import { type Block } from "../../types";
-import { useResume, FONT_OPTIONS } from "../../context";
+import { useResume } from "../../useResume";
+import { FONT_OPTIONS } from "../constants";
 import { PIView    } from "../../blocks/PIBlock";
 import { TitleView } from "../../blocks/TitleBlock";
 import { ListView  } from "../../blocks/ListBlock";
 import { InfoView  } from "../../blocks/InfoBlock";
 
-/** The scrollable A4-sized resume preview. Renders all blocks in order. */
+/**
+ * Canvas - 简历画布组件
+ *
+ * 可滚动的 A4 尺寸简历预览区，渲染所有区块
+ *
+ * 功能：
+ * - 显示/隐藏加载遮罩（AI 生成时）
+ * - 区块的增删改操作（通过 useResume 获取状态和方法）
+ * - 区块排序（上移/下移）
+ */
 export function Canvas() {
   const { blocks, setBlocks, color, lightColor, paddingH, paddingV, font, isLoading } = useResume();
 
-  /** Applies patcher fn to the block with the given id. */
+  // ── 区块更新 ─────────────────────────────────────────────────────────────
+  /**
+   * 对指定 id 的区块应用修改函数
+   */
   const update = (id: string, fn: (cur: Block) => Block) =>
     setBlocks(bs => bs.map(b => b.id === id ? fn(b) : b));
 
-  /** Swaps block at index i with its neighbour at i + dir. */
+  /**
+   * 交换相邻区块的位置
+   * @param i - 当前区块索引
+   * @param dir - 方向（-1 上移，1 下移）
+   */
   const move = (i: number, dir: -1 | 1) =>
     setBlocks(bs => {
       const j = i + dir;
@@ -25,10 +42,15 @@ export function Canvas() {
       return a;
     });
 
-  /** Removes a block by id. */
+  /**
+   * 根据 id 删除区块
+   */
   const remove = (id: string) => setBlocks(bs => bs.filter(b => b.id !== id));
 
-  /** Renders the correct view component for a given block. */
+  // ── 渲染区块 ─────────────────────────────────────────────────────────────
+  /**
+   * 根据区块类型渲染对应的视图组件
+   */
   const renderBlock = (b: Block, i: number) => {
     const set   = (fn: (cur: Block) => Block) => update(b.id, fn);
     const onUp   = () => move(i, -1);
@@ -46,7 +68,7 @@ export function Canvas() {
   return (
     <div id="resume-wrap" className="flex-1 bg-gray-100 py-10 flex justify-center overflow-auto">
       <div className="relative">
-        {/* Loading overlay — covers the canvas while AI is processing. */}
+        {/* AI 处理中的加载遮罩 */}
         {isLoading && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/70 backdrop-blur-sm rounded-sm">
             <div className="flex flex-col items-center gap-3">
@@ -56,6 +78,7 @@ export function Canvas() {
           </div>
         )}
 
+        {/* 简历画布 */}
         <div
           id="resume-canvas"
           className="bg-white shadow-xl rounded-sm"

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useLayoutEffect } from "react";
-import { createBadgeHtml, type BadgeVariant } from "../components/editor/BadgeInsertPanel";
+import { createBadgeHtml } from "../components/editor/createBadgeHtml";
+import type { BadgeVariant } from "../components/constants";
 import { CE_CURSOR_MARKER_ID, EDITABLE_BADGE_VARIANTS } from "../components/constants";
 
 const toEditableVariant = (v: string | null): BadgeVariant =>
@@ -13,9 +14,20 @@ interface EditState {
 interface UseContentEditableOptions {
   html: string;
   onCommit: (h: string) => void;
-  onBadgeEdit?: (badge: HTMLElement, e: React.MouseEvent) => void;
 }
 
+/**
+ * useContentEditable - 可编辑内容区域状态与逻辑 Hook
+ *
+ * 管理 CE (ContentEditable) 组件的所有状态和交互：
+ * - 焦点状态管理
+ * - 徽章插入/编辑面板的开关和位置
+ * - 文本格式工具栏的开关和位置
+ * - 光标范围保存与恢复（用于在 DOM 操作后恢复选区）
+ * - 光标标记管理（在插入徽章时标记光标位置）
+ * - 外部点击关闭面板
+ * - selectionchange 事件监听（更新格式工具栏可见性）
+ */
 interface UseContentEditableReturn {
   focused: boolean;
   setFocused: (v: boolean) => void;
@@ -46,8 +58,8 @@ interface UseContentEditableReturn {
 export function useContentEditable({
   html,
   onCommit,
-  onBadgeEdit: _onBadgeEdit,
 }: UseContentEditableOptions): UseContentEditableReturn {
+  // ── 状态 ─────────────────────────────────────────────────────────────────
   const [focused, setFocused] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelMode, setPanelMode] = useState<"insert" | "edit">("insert");
@@ -63,13 +75,11 @@ export function useContentEditable({
   const savedFormatRangeRef = useRef<Range | null>(null);
   const updateFormatPanelRef = useRef(() => {});
 
+  // ── 初始化：将 html 内容写入 DOM ──────────────────────────────────────────
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => { if (ref.current) ref.current.innerHTML = html; }, []);
 
-  useEffect(() => {
-    if (ref.current && !focusedRef.current && !panelOpen && !formatPanelOpen) ref.current.innerHTML = html;
-  }, [html, panelOpen, formatPanelOpen]);
-
+  // ── 非聚焦时同步外部 html 到 DOM（忽略用户在输入时的中间状态） ─────────────
   const handleFocus = useCallback(() => {
     focusedRef.current = true;
     setFocused(true);
@@ -85,6 +95,11 @@ export function useContentEditable({
     onCommit(el.innerHTML);
   }, [onCommit]);
 
+  // ── 插入光标标记 ──────────────────────────────────────────────────────────
+  /**
+   * 在当前保存的光标位置插入一个临时标记元素
+   * 用于在插入徽章后，将光标定位到徽章后面
+   */
   const insertCursorMarker = useCallback(() => {
     const el = ref.current;
     const range = savedRangeRef.current;
@@ -98,15 +113,18 @@ export function useContentEditable({
     range.insertNode(marker);
   }, []);
 
+  // ── 移除光标标记 ──────────────────────────────────────────────────────────
   const removeCursorMarker = useCallback(() => {
     ref.current?.querySelector(`[data-badge-cursor-marker="${CE_CURSOR_MARKER_ID}"]`)?.remove();
   }, []);
 
+  // ── 清除编辑选区状态 ──────────────────────────────────────────────────────
   const clearEditSelection = useCallback(() => {
     editTargetRef.current?.removeAttribute("data-badge-selected");
     editTargetRef.current = null;
   }, []);
 
+  // ── 打开发送面板（在当前光标位置） ────────────────────────────────────────
   const openInsertPanel = useCallback((e: React.MouseEvent) => {
     const sel = document.getSelection();
     const range = sel?.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
@@ -122,6 +140,7 @@ export function useContentEditable({
     }
   }, [insertCursorMarker]);
 
+  // ── 打开编辑面板（编辑现有徽章） ──────────────────────────────────────────
   const openEditPanel = useCallback((badge: HTMLElement, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -138,6 +157,11 @@ export function useContentEditable({
     removeCursorMarker();
   }, [removeCursorMarker]);
 
+  // ── 更新格式工具栏位置 ────────────────────────────────────────────────────
+  /**
+   * 根据当前选区更新格式工具栏的显示状态和位置
+   * 选区为空、选中徽章内容、或面板打开时隐藏工具栏
+   */
   const updateFormatPanel = useCallback(() => {
     const sel = document.getSelection();
     const el = ref.current;
@@ -162,6 +186,11 @@ export function useContentEditable({
     setFormatPanelOpen(true);
   }, [panelOpen]);
 
+  // ── 执行文本格式化 ────────────────────────────────────────────────────────
+  /**
+   * 执行 bold/italic/color 命令
+   * 先恢复保存的选区，再执行 execCommand
+   */
   const handleFormat = useCallback((cmd: "bold" | "italic" | "color", value?: string) => {
     const el = ref.current;
     const r = savedFormatRangeRef.current;
@@ -178,6 +207,7 @@ export function useContentEditable({
     onCommit(el.innerHTML);
   }, [onCommit]);
 
+  // ── 关闭格式工具栏 ────────────────────────────────────────────────────────
   const handleFormatPanelClose = useCallback(() => {
     setFormatPanelOpen(false);
     savedFormatRangeRef.current = null;
@@ -187,6 +217,11 @@ export function useContentEditable({
     updateFormatPanelRef.current = updateFormatPanel;
   });
 
+  // ── 右键菜单处理 ─────────────────────────────────────────────────────────
+  /**
+   * 右键点击徽章：打开发辑面板
+   * 右键点击其他位置：打开插入面板
+   */
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     const target = (e.target as HTMLElement).closest("[data-badge]");
@@ -197,6 +232,7 @@ export function useContentEditable({
     openInsertPanel(e);
   }, [openEditPanel, openInsertPanel]);
 
+  // ── 徽章点击处理 ─────────────────────────────────────────────────────────
   const handleBadgeClick = useCallback((e: React.MouseEvent) => {
     const badge = (e.target as HTMLElement).closest("[data-badge]");
     if (badge && ref.current?.contains(badge)) {
@@ -204,6 +240,12 @@ export function useContentEditable({
     }
   }, [openEditPanel]);
 
+  // ── 确认徽章（插入或更新） ────────────────────────────────────────────────
+  /**
+   * 插入模式：在保存的光标位置插入新徽章
+   * 编辑模式：替换现有徽章
+   * 插入后恢复光标位置到徽章后面
+   */
   const handleBadgeConfirm = useCallback((variant: BadgeVariant, text: string) => {
     const el = ref.current;
     if (!el) return;
@@ -264,6 +306,7 @@ export function useContentEditable({
     savedRangeRef.current = null;
   }, [panelMode, clearEditSelection, removeCursorMarker, onCommit]);
 
+  // ── 关闭面板 ──────────────────────────────────────────────────────────────
   const handlePanelClose = useCallback(() => {
     removeCursorMarker();
     clearEditSelection();
@@ -271,7 +314,8 @@ export function useContentEditable({
     savedRangeRef.current = null;
   }, [removeCursorMarker, clearEditSelection]);
 
-  // Close panel on outside click
+  // ── 面板外部点击关闭 ─────────────────────────────────────────────────────
+  // 徽章插入面板
   useEffect(() => {
     if (!panelOpen) return;
     const closePanel = () => {
@@ -296,7 +340,7 @@ export function useContentEditable({
     };
   }, [panelOpen, removeCursorMarker, clearEditSelection]);
 
-  // Close format panel on outside click
+  // ── 格式工具栏外部点击关闭 ────────────────────────────────────────────────
   useEffect(() => {
     if (!formatPanelOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -307,7 +351,7 @@ export function useContentEditable({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [formatPanelOpen, handleFormatPanelClose]);
 
-  // Selection change listener
+  // ── 选区变化监听 ─────────────────────────────────────────────────────────
   useEffect(() => {
     const handleSelectionChange = () => updateFormatPanelRef.current();
     document.addEventListener("selectionchange", handleSelectionChange);

@@ -1,10 +1,18 @@
 import { type Block, type TitleBlock } from "../types";
-import { useResume } from "../context";
+import { useResume } from "../useResume";
 import { CE } from "../components/editor/CE";
 import { BlockPanel } from "../components/editor/BlockPanel";
 import { useDebounceHover } from "../hooks";
 
-/** Section title with an optional subtitle and a coloured divider line. */
+/**
+ * TitleView - 标题区块视图
+ *
+ * 显示带可选副标题的分区标题，下方有主题色分隔线
+ *
+ * @param b - 区块数据
+ * @param set - 区块更新函数
+ * @param onUp/onDown/onDel - 区块操作（上移/下移/删除）
+ */
 export function TitleView({
   b, set, onUp, onDown, onDel,
 }: {
@@ -23,9 +31,10 @@ export function TitleView({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      {/* No block-specific options for a title block — panel only shows up/down/delete */}
+      {/* 标题区块没有特定操作 - 面板只显示上下移动和删除 */}
       <BlockPanel onUp={onUp} onDown={onDown} onDel={onDel} visible={hovered} />
 
+      {/* 标题 + 副标题 */}
       <div className="flex items-baseline gap-2 flex-wrap">
         <CE
           html={b.title}
@@ -40,6 +49,7 @@ export function TitleView({
           placeholder="Optional subtitle"
         />
       </div>
+      {/* 分隔线 */}
       <div className="mt-1.5 border-t" style={{ borderColor: color }} />
     </div>
   );

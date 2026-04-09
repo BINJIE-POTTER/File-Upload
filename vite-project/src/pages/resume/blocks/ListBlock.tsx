@@ -1,14 +1,17 @@
 import React from "react";
 import { Trash2, Plus } from "lucide-react";
 import { uid, type Block, type ListBlock } from "../types";
-import { useResume } from "../context";
+import { useResume } from "../useResume";
 import { CE } from "../components/editor/CE";
 import { BlockPanel } from "../components/editor/BlockPanel";
 import { useDebounceHover } from "../hooks";
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── 子组件 ───────────────────────────────────────────────────────────────────
 
-/** Filled primary-colour circle used as a bullet point. */
+/**
+ * BulletDot - 实心圆点（项目符号）
+ * 使用主题色的实心圆，强制打印颜色
+ */
 function BulletDot({ color }: { color: string }) {
   return (
     <span
@@ -26,7 +29,10 @@ function BulletDot({ color }: { color: string }) {
   );
 }
 
-/** Numbered circle with the primary colour background — force-printed via print-color-adjust. */
+/**
+ * NumberBadge - 编号圆圈
+ * 带主题色背景的编号圆圈，强制打印颜色
+ */
 function NumberBadge({ n, color, lightColor }: { n: number; color: string; lightColor: string }) {
   return (
     <span
@@ -47,8 +53,11 @@ function NumberBadge({ n, color, lightColor }: { n: number; color: string; light
   );
 }
 
-// ── Panel content (private) ───────────────────────────────────────────────────
-/** Block-specific options rendered inside the BlockPanel popover. */
+// ── 面板内容组件（私有）────────────────────────────────────────────────────
+/**
+ * ListPanelContent - 列表区块的特定操作面板
+ * 用于：切换项目符号/编号模式、添加新项
+ */
 function ListPanelContent({
   b, set,
 }: {
@@ -59,7 +68,7 @@ function ListPanelContent({
 
   return (
     <>
-      {/* Bullet / number toggle */}
+      {/* 项目符号/编号切换 */}
       <div className="flex gap-1 p-1">
         {(["bullet", "number"] as const).map((type) => (
           <button
@@ -76,7 +85,7 @@ function ListPanelContent({
         ))}
       </div>
 
-      {/* Add item */}
+      {/* 添加项按钮 */}
       <button
         className="flex items-center gap-2 px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-50 rounded-md w-full"
         onClick={() => set(cur => ({
@@ -91,7 +100,17 @@ function ListPanelContent({
 }
 
 // ── View ──────────────────────────────────────────────────────────────────────
-/** Bullet or numbered list block. */
+/**
+ * ListView - 列表区块视图
+ *
+ * 支持两种模式：
+ * - 项目符号列表（实心圆点）
+ * - 编号列表（带编号的圆圈）
+ *
+ * @param b - 区块数据
+ * @param set - 区块更新函数
+ * @param onUp/onDown/onDel - 区块操作（上移/下移/删除）
+ */
 export function ListView({
   b, set, onUp, onDown, onDel,
 }: {
@@ -114,9 +133,10 @@ export function ListView({
         <ListPanelContent b={b} set={set} />
       </BlockPanel>
 
+      {/* 列表项 */}
       <div className="space-y-1.5 pl-1">
         {b.items.map((item, i) => (
-          // relative + pr-5: delete button is absolute so it takes no layout space
+          // relative + pr-5：删除按钮绝对定位，不占用布局空间
           <div key={item.id} className="group/item relative flex items-start gap-2.5">
             {b.iconType === "bullet"
               ? <BulletDot color={color} />
@@ -133,7 +153,7 @@ export function ListView({
               className="text-sm text-gray-700 flex-1 leading-relaxed"
               placeholder="Describe this item…"
             />
-            {/* Absolute: sits at the right edge, takes no space in the flex row */}
+            {/* 绝对定位删除按钮 - 在行右侧，hover 时显示 */}
             <button
               className="no-print absolute right-[-20px] top-[5px] opacity-0 group-hover/item:opacity-100 transition-opacity delay-0 group-hover/item:delay-[80ms] text-gray-300 hover:text-red-400"
               onClick={() => set(cur => ({

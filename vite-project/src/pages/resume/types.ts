@@ -5,37 +5,41 @@ export type PIBlock    = { id: string; type: "pi";    name: string; lines: strin
 export type TitleBlock = { id: string; type: "title"; title: string; sub: string };
 export type ListItem   = { id: string; html: string };
 export type ListBlock  = { id: string; type: "list";  iconType: "bullet" | "number"; items: ListItem[] };
-/** Single-line block: left section aligns start, right section aligns end. */
+/**
+ * InfoBlock - 信息行区块（单行左右对齐）
+ * left: 左侧文本（起始对齐）
+ * right: 右侧文本（结束对齐，用于日期、位置、状态等）
+ */
 export type InfoBlock  = { id: string; type: "info";  left: string; right: string };
 export type Block = PIBlock | TitleBlock | ListBlock | InfoBlock;
 
-// ── AI response types ────────────────────────────────────────────────────
-// Flat, LLM-friendly JSON shape returned by Dify workflow.
-// Kept minimal so the AI only needs to produce simple key-value pairs.
-//
-// Inline markers (any string field):
-//   {{text|format}}  — format determines output:
-//     • default | secondary | outline  → badge (skill/tech tag)
-//     • bold     → <strong>
-//     • italic   → <em>
-//     • #hex     → <span style="color:#hex"> (e.g. #ef4444, #22c55e)
-//     • bold,italic | #hex,bold  → combined (comma-separated)
-//
-// Examples:
-//   "Expert in {{React|default}} and {{TypeScript|secondary}}"
-//   "{{Led|bold}} a team of 5 engineers"
-//   "{{Key achievement|#22c55e,bold}} delivered on time"
+// ── AI 响应类型 ─────────────────────────────────────────────────────────────
 
+/**
+ * AI 标签徽章变体
+ */
 export type AITagVariant = "default" | "secondary" | "outline";
 const AI_TAG_VARIANTS: AITagVariant[] = ["default", "secondary", "outline"];
 
-/** Regex: {{text|format}} */
+/** 解析 {{text|format}} 标记的正则表达式 */
 const AI_MARKER_RE = /\{\{(.+?)\|([^}]+)\}\}/g;
 
+/**
+ * HTML 转义
+ */
 const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-/** Parses {{text|format}} markers into HTML (badges, bold, italic, color). */
+/**
+ * parseAITags - 解析 AI 文本中的 {{text|format}} 标记
+ *
+ * 支持的格式：
+ * - default/secondary/outline → 徽章
+ * - bold → 加粗
+ * - italic → 斜体
+ * - #hex → 颜色（如 #ef4444）
+ * - 组合：逗号分隔（如 #ef4444,bold）
+ */
 export const parseAITags = (text: string): string =>
   text.replace(AI_MARKER_RE, (_, body: string, format: string) => {
     const fmt = format.trim().toLowerCase();
@@ -57,12 +61,24 @@ export const parseAITags = (text: string): string =>
     return inner;
   });
 
+/**
+ * AI 区块
+ */
 export type AISection = {
   title: string;
   sub?: string;
   items: string[];
 };
 
+/**
+ * AI 简历数据格式（Dify 工作流返回的扁平化 JSON）
+ *
+ * 格式说明：
+ * - name: 姓名
+ * - lines: 联系信息数组
+ * - avatar: 头像 URL（可选）
+ * - sections: 区块数组
+ */
 export type AIResumeData = {
   name: string;
   lines: string[];
@@ -70,7 +86,10 @@ export type AIResumeData = {
   sections: AISection[];
 };
 
-/** Validates unknown data as AIResumeData. Used by ImportJsonPanel and AI chat. */
+/**
+ * validateAIResumeData - 验证未知数据是否为 AIResumeData
+ * 用于 ImportJsonPanel 和 AI 聊天中的数据验证
+ */
 export const validateAIResumeData = (data: unknown): data is AIResumeData => {
   if (!data || typeof data !== "object") return false;
   const d = data as Record<string, unknown>;
@@ -87,18 +106,40 @@ export const validateAIResumeData = (data: unknown): data is AIResumeData => {
   return true;
 };
 
-// ── Factories ─────────────────────────────────────────────────────────────
+// ── 工厂函数 ────────────────────────────────────────────────────────────────
+
+/**
+ * 生成唯一标识符
+ */
 export const uid = () => crypto.randomUUID();
 
+/**
+ * 创建个人信息区块
+ */
 export const mkPI = (): PIBlock => ({
   id: uid(), type: "pi", name: "Jane Doe",
   lines: ["Software Engineer / Google / San Francisco", "jane@example.com / +1 415 000 0000"],
   avatar: "", avatarShape: "circle",
 });
+
+/**
+ * 创建标题区块
+ */
 export const mkTitle = (t = "Section"): TitleBlock => ({ id: uid(), type: "title", title: t, sub: "" });
+
+/**
+ * 创建列表区块
+ */
 export const mkList  = (): ListBlock  => ({ id: uid(), type: "list", iconType: "bullet", items: [{ id: uid(), html: "Add an item…" }] });
+
+/**
+ * 创建信息行区块
+ */
 export const mkInfo  = (): InfoBlock  => ({ id: uid(), type: "info", left: "Secondary info", right: "Right-aligned" });
 
+/**
+ * 默认区块列表（初始简历内容）
+ */
 export const DEFAULTS: Block[] = [
   { ...mkPI() },
   mkTitle("Work Experience"),
@@ -115,7 +156,10 @@ export const DEFAULTS: Block[] = [
   ]},
 ];
 
-/** Converts flat AI JSON into internal Block[] array. Parses {{tag|variant}} markers. */
+/**
+ * convertAIResponse - 将 AI JSON 转换为内部 Block[] 数组
+ * 解析 {{tag|variant}} 标记
+ */
 export const convertAIResponse = (data: AIResumeData): Block[] => {
   const pi: PIBlock = {
     id: uid(), type: "pi",
@@ -133,7 +177,10 @@ export const convertAIResponse = (data: AIResumeData): Block[] => {
   return [pi, ...sectionBlocks];
 };
 
-/** Demo AI response for testing (badges, bold, italic, color). */
+/**
+ * DEMO_AI_RESPONSE - 测试用 AI 响应数据
+ * 包含各种徽章、加粗、斜体、颜色格式示例
+ */
 export const DEMO_AI_RESPONSE: AIResumeData = {
   name: "Alex Chen",
   lines: [
@@ -173,7 +220,15 @@ export const DEMO_AI_RESPONSE: AIResumeData = {
   ],
 };
 
-// ── Color utils ───────────────────────────────────────────────────────────
+// ── 颜色工具函数 ──────────────────────────────────────────────────────────
+
+/**
+ * lighten -  HEX 颜色转换为 RGB 并按比例混合白色
+ *
+ * @param hex - HEX 颜色值（如 #3b82f6）
+ * @param t - 混合比例（0-1），值越大越浅，默认 0.85
+ * @returns RGB 格式的颜色字符串
+ */
 export const lighten = (hex: string, t = 0.85): string => {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);

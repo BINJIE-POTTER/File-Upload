@@ -1,13 +1,18 @@
 import React, { useRef } from "react";
 import { Trash2, Plus, UserCircle } from "lucide-react";
 import { type Block, type PIBlock } from "../types";
-import { useResume } from "../context";
+import { useResume } from "../useResume";
 import { CE } from "../components/editor/CE";
 import { BlockPanel } from "../components/editor/BlockPanel";
 import { useDebounceHover } from "../hooks";
 
-// ── Panel content (private) ───────────────────────────────────────────────────
-/** Block-specific options rendered inside the BlockPanel popover. */
+// ── 面板内容组件（私有）────────────────────────────────────────────────────
+/**
+ * PIPanelContent - 个人区块的特定操作面板
+ * 显示在 BlockPanel 弹出框中，用于：
+ * - 添加信息行
+ * - 选择头像形状（圆形/方形）
+ */
 function PIPanelContent({
   b, set,
 }: {
@@ -54,7 +59,18 @@ function PIPanelContent({
 }
 
 // ── View ──────────────────────────────────────────────────────────────────────
-/** Personal information block — large name, info lines, and avatar. */
+/**
+ * PIView - 个人信息区块视图
+ *
+ * 组成：
+ * - 大号姓名（可编辑）
+ * - 信息行列表（可编辑，可添加/删除）
+ * - 头像上传（圆形/方形切换）
+ *
+ * @param b - 区块数据
+ * @param set - 区块更新函数
+ * @param onUp/onDown/onDel - 区块操作（上移/下移/删除）
+ */
 export function PIView({
   b, set, onUp, onDown, onDel,
 }: {
@@ -68,9 +84,11 @@ export function PIView({
   const fileRef = useRef<HTMLInputElement>(null);
   const { hovered, onMouseEnter, onMouseLeave } = useDebounceHover();
 
+  // ── 快捷更新函数 ──────────────────────────────────────────────────────────
   const upd = (patch: Partial<PIBlock>) => set(cur => ({ ...(cur as PIBlock), ...patch }));
   const shape = b.avatarShape ?? "circle";
 
+  // ── 头像上传处理 ─────────────────────────────────────────────────────────
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -80,8 +98,10 @@ export function PIView({
   };
 
   return (
-    // -ml-8 pl-8: extends the hover zone 32 px to the left so moving from
-    // block content to the gutter trigger never leaves the hover zone.
+    /*
+     * -ml-8 pl-8：向左扩展 32px 悬停区域，
+     * 使从区块内容移动到左边距触发器时不会离开悬停区域
+     */
     <div
       className="group relative -ml-8 pl-8"
       onMouseEnter={onMouseEnter}
@@ -91,12 +111,12 @@ export function PIView({
         <PIPanelContent b={b} set={set} />
       </BlockPanel>
 
-      {/* Content row + coloured bottom border */}
+      {/* 内容行 + 底部彩色边框 */}
       <div
         className="flex items-start justify-between gap-6 py-4 mb-1"
         style={{ borderBottom: `2px solid ${color}` }}
       >
-        {/* Name + info lines */}
+        {/* 姓名 + 信息行 */}
         <div className="flex-1 min-w-0">
           <CE
             html={b.name}
@@ -118,7 +138,7 @@ export function PIView({
                   className="text-sm text-gray-500 flex-1 leading-relaxed"
                   placeholder="Info / Details…"
                 />
-                {/* Per-line delete — absolute so it takes no layout space */}
+                {/* 每行删除按钮 - 绝对定位，不占布局空间 */}
                 <button
                   className="no-print opacity-0 group-hover/ln:opacity-100 text-gray-300 hover:text-red-400 transition-opacity shrink-0"
                   onClick={() => set(cur => ({
@@ -133,7 +153,7 @@ export function PIView({
           </div>
         </div>
 
-        {/* Avatar */}
+        {/* 头像区域 */}
         <div className="shrink-0">
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
           <div className={`relative w-[100px] h-[100px] overflow-hidden ${shape === "circle" ? "rounded-full" : "rounded-lg"}`}>

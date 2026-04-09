@@ -2,13 +2,18 @@ import { type Block, type InfoBlock } from "../types";
 import { CE } from "../components/editor/CE";
 import { BlockPanel } from "../components/editor/BlockPanel";
 import { useDebounceHover } from "../hooks";
-import { useResume } from "../context";
+import { useResume } from "../useResume";
 
 /**
- * Single-line block with two sections:
- * - Left: aligns at start
- * - Right: aligns at end
- * For secondary info (e.g. dates, location, status).
+ * InfoView - 信息行区块视图
+ *
+ * 单行区块，左侧和右侧分别对齐：
+ * - 左侧：起始对齐
+ * - 右侧：结束对齐（用于日期、位置、状态等次要信息）
+ *
+ * @param b - 区块数据
+ * @param set - 区块更新函数
+ * @param onUp/onDown/onDel - 区块操作（上移/下移/删除）
  */
 export function InfoView({
   b,

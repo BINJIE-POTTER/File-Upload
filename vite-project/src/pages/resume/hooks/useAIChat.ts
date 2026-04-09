@@ -2,9 +2,20 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { sendDifyChat } from "@/services/chatApi";
 import { loadChatFromStorage, saveChatToStorage, type Message } from "../utils/storage";
-import { useResume } from "../context";
+import { useResume } from "../useResume";
 import { validateAIResumeData, type AIResumeData } from "../types";
 
+/**
+ * useAIChat - AI 聊天状态与逻辑 Hook
+ *
+ * 管理 AI 聊天面板的所有状态：
+ * - 消息列表（user/assistant）
+ * - 输入框状态
+ * - 流式响应状态
+ * - 对话 ID（用于多轮对话）
+ * - 面板尺寸（可拖拽调整）
+ * - 与 localStorage 的持久化同步
+ */
 interface UseAIChatReturn {
   messages: Message[];
   input: string;
@@ -22,6 +33,7 @@ interface UseAIChatReturn {
 export function useAIChat(): UseAIChatReturn {
   const { importFromJson } = useResume();
 
+  // ── 状态 ─────────────────────────────────────────────────────────────────
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [streamingContent, setStreamingContent] = useState("");
@@ -32,7 +44,7 @@ export function useAIChat(): UseAIChatReturn {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load from storage on mount
+  // ── 挂载时从 localStorage 加载聊天记录 ────────────────────────────────────
   useEffect(() => {
     if (!hasLoadedFromStorage) {
       const stored = loadChatFromStorage();
@@ -42,14 +54,14 @@ export function useAIChat(): UseAIChatReturn {
     }
   }, [hasLoadedFromStorage]);
 
-  // Persist to storage on change
+  // ── 消息或流式内容变化时持久化到 localStorage ──────────────────────────────
   useEffect(() => {
     if (hasLoadedFromStorage && !isStreaming) {
       saveChatToStorage({ messages, conversationId, updatedAt: Date.now() });
     }
   }, [messages, conversationId, isStreaming, hasLoadedFromStorage]);
 
-  // Scroll to bottom
+  // ── 滚动到底部 ────────────────────────────────────────────────────────────
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
@@ -58,6 +70,7 @@ export function useAIChat(): UseAIChatReturn {
     scrollToBottom();
   }, [messages, streamingContent, scrollToBottom]);
 
+  // ── 清空聊天 ──────────────────────────────────────────────────────────────
   const handleClearChat = useCallback(() => {
     setMessages([]);
     setConversationId(null);
@@ -66,6 +79,12 @@ export function useAIChat(): UseAIChatReturn {
     toast.success("Chat cleared");
   }, []);
 
+  // ── 尝试从 AI 响应中解析并应用 JSON ──────────────────────────────────────
+  /**
+   * 尝试从文本中提取 JSON 并验证格式
+   * 如果验证通过，导入到简历数据中
+   * 返回是否成功导入
+   */
   const handleTryApplyJson = useCallback(
     (text: string): boolean => {
       const extracted = extractJsonFromText(text) ?? text;
@@ -84,6 +103,12 @@ export function useAIChat(): UseAIChatReturn {
     [importFromJson]
   );
 
+  // ── 发送消息 ──────────────────────────────────────────────────────────────
+  /**
+   * 发送用户消息到 Dify API
+   * 处理响应并更新消息列表
+   * 流式响应暂未实现（blocking mode）
+   */
   const sendMessage = async () => {
     const query = input.trim();
     if (!query || isStreaming) return;
@@ -134,7 +159,11 @@ export function useAIChat(): UseAIChatReturn {
   };
 }
 
-/** Extracts JSON from text, handling markdown code blocks. */
+/**
+ * 从文本中提取 JSON，处理 Markdown 代码块
+ * @param text - 文本内容
+ * @returns JSON 字符串或 null
+ */
 function extractJsonFromText(text: string): string | null {
   const trimmed = text.trim();
   const jsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);

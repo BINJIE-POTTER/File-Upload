@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Badge, badgeVariants } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { BADGE_VARIANTS, type BadgeVariant } from "../constants";
 
-export type { BadgeVariant };
-export { BADGE_VARIANTS };
-
+/**
+ * 预览徽章样式计算
+ * 根据变体和颜色返回对应的 CSS 样式
+ */
 const getBadgePreviewStyle = (
   variant: BadgeVariant,
   color?: string,
@@ -35,7 +36,23 @@ type BadgeInsertPanelProps = {
   isEdit?: boolean;
 };
 
-/** Panel for insert/edit badge: pick variant, preview text, confirm. */
+/**
+ * BadgeInsertPanel - 徽章插入/编辑面板
+ *
+ * 功能：
+ * - 选择徽章样式（default/secondary/outline）
+ * - 输入徽章文本
+ * - 实时预览徽章效果
+ * - 支持插入和编辑两种模式
+ *
+ * @param onConfirm - 确认回调（variant, text）
+ * @param onClose - 关闭回调
+ * @param color - 主题色（用于预览样式）
+ * @param lightColor - 浅色主题色（用于 secondary 变体）
+ * @param initialVariant - 初始变体（编辑时传入当前值）
+ * @param initialText - 初始文本（编辑时传入当前值）
+ * @param isEdit - 是否为编辑模式
+ */
 export function BadgeInsertPanel({
   onConfirm,
   onClose,
@@ -45,15 +62,18 @@ export function BadgeInsertPanel({
   initialText = "",
   isEdit = false,
 }: BadgeInsertPanelProps) {
+  // ── 状态 ─────────────────────────────────────────────────────────────────
   const [variant, setVariant] = useState<BadgeVariant>(initialVariant);
   const [text, setText] = useState(initialText);
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingConfirmRef = useRef(false);
 
+  // ── 自动聚焦 ─────────────────────────────────────────────────────────────
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
+  // ── 确认插入 ─────────────────────────────────────────────────────────────
   const handleConfirm = () => {
     const valueToUse = inputRef.current?.value ?? text;
     pendingConfirmRef.current = false;
@@ -61,10 +81,13 @@ export function BadgeInsertPanel({
     onClose?.();
   };
 
+  // ── 输入法组合结束处理 ───────────────────────────────────────────────────
   const handleCompositionEnd = () => {
     if (pendingConfirmRef.current) handleConfirm();
   };
 
+  // ── 键盘事件处理 ─────────────────────────────────────────────────────────
+  // Enter 确认，Escape 关闭
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -84,6 +107,7 @@ export function BadgeInsertPanel({
       role="dialog"
       aria-label="Insert badge"
     >
+      {/* 变体选择 */}
       <div className="flex flex-wrap gap-1">
         {BADGE_VARIANTS.map((v) => (
           <button
@@ -101,6 +125,8 @@ export function BadgeInsertPanel({
           </button>
         ))}
       </div>
+
+      {/* 文本输入和预览 */}
       <div className="flex flex-col gap-1.5">
         <input
           ref={inputRef}
@@ -119,21 +145,11 @@ export function BadgeInsertPanel({
           </Badge>
         </div>
       </div>
+
+      {/* 确认按钮 */}
       <Button size="sm" onClick={handleConfirm} className="w-full">
         {isEdit ? "Update" : "Insert"}
       </Button>
     </div>
   );
-}
-
-/** Returns HTML string for a badge to insert into contenteditable. Inline, vertical-align middle. */
-export function createBadgeHtml(variant: BadgeVariant, text: string): string {
-  const cls = badgeVariants({ variant }) + " leading-none";
-  const style = "vertical-align:middle line-height:1";
-  const escaped = text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-  return `<span contenteditable="false" data-badge data-variant="${variant}" class="${cls}" style="${style}">${escaped}</span>`;
 }

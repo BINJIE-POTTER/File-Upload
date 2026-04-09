@@ -10,10 +10,24 @@ interface ChatInputProps {
   color: string;
 }
 
+/**
+ * ChatInput - AI 聊天输入框组件
+ *
+ * @param value - 输入框内容
+ * @param onChange - 内容变化回调
+ * @param onSend - 发送消息回调
+ * @param isStreaming - 是否正在等待响应（禁用输入）
+ * @param color - 主题色（发送按钮背景）
+ *
+ * 特性：
+ * - 自动高度调整（根据内容行数，最大 4 行）
+ * - Enter 发送，Shift+Enter 换行
+ * - 发送按钮在输入为空时禁用
+ */
 export function ChatInput({ value, onChange, onSend, isStreaming, color }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-resize textarea
+  // ── 自动调整高度 ─────────────────────────────────────────────────────────
   useEffect(() => {
     const ta = textareaRef.current;
     if (ta) {
@@ -22,6 +36,7 @@ export function ChatInput({ value, onChange, onSend, isStreaming, color }: ChatI
     }
   }, [value]);
 
+  // ── 键盘事件处理 ─────────────────────────────────────────────────────────
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();

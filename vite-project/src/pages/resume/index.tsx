@@ -1,4 +1,5 @@
-import { ResumeProvider, useResume } from "./context";
+import { ResumeProvider } from "./context";
+import { useResume } from "./useResume";
 import { FONT_OPTIONS } from "./components/constants";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Canvas } from "./components/layout/Canvas";

@@ -7,6 +7,13 @@ interface ChatMessageProps {
   isStreaming?: boolean;
 }
 
+/**
+ * ChatMessage - 聊天消息气泡组件
+ *
+ * @param message - 消息对象（role: user/assistant, content: 文本）
+ * @param color - 主题色（用于助手消息气泡背景）
+ * @param isStreaming - 是否正在流式输出（显示光标动画）
+ */
 export function ChatMessage({ message, color, isStreaming }: ChatMessageProps) {
   const isUser = message.role === "user";
 
@@ -46,10 +53,10 @@ export function ChatMessage({ message, color, isStreaming }: ChatMessageProps) {
   );
 }
 
-interface StreamingIndicatorProps {
-  color: string;
-}
-
+/**
+ * StreamingIndicator - 流式输出加载指示器
+ * 显示三个跳动的圆点，表示 AI 正在响应
+ */
 export function StreamingIndicator({ color }: StreamingIndicatorProps) {
   return (
     <div className="flex gap-2.5 justify-start">

@@ -1,35 +1,47 @@
 import { useState } from "react";
 import { FileDown, FileJson, Plus, Sparkles, Undo2 } from "lucide-react";
-import { useResume, FONT_OPTIONS, type FontId } from "../../context";
+import { useResume } from "../../useResume";
+import type { FontId } from "../constants";
 import { DEMO_AI_RESPONSE } from "../../types";
-import { BLOCK_TYPES } from "../constants";
+import { BLOCK_TYPES, FONT_OPTIONS } from "../constants";
 import { ImportJsonPanel } from "../controls/ImportJsonPanel";
 import { ColorPicker } from "../controls/ColorPicker";
 import { PaddingSlider } from "../controls/PaddingSlider";
 import { FontSelector } from "../controls/FontSelector";
 
 /**
- * Left sidebar — block palette, colour picker, padding slider, and PDF export.
- * Fixed height (h-full) so it never scrolls with the canvas; overflows internally.
+ * Sidebar - 左侧边栏组件
+ *
+ * 包含功能：
+ * - 添加区块按钮组（Personal Info、Section Title、List、Info Line）
+ * - 外观设置（主色调、字体、内边距）
+ * - AI 操作（导入 JSON、生成 Demo、恢复上一版）
+ * - 导出 PDF
+ *
+ * 布局：固定高度（h-full），内部滚动，区块内容在中央不随页面滚动
  */
 export function Sidebar() {
+  // ── 状态 ─────────────────────────────────────────────────────────────────
   const { color, setColor, paddingH, setPaddingH, paddingV, setPaddingV, font, setFont, addBlock, isLoading, loadAIResponse, importFromJson, restoreBlocks, canRestore } = useResume();
   const [importPanelOpen, setImportPanelOpen] = useState(false);
 
+  // ── 处理 Demo AI 按钮点击 ────────────────────────────────────────────────
   const handleDemoAI = () => { if (!isLoading) loadAIResponse(DEMO_AI_RESPONSE); };
 
   return (
     <>
+    {/* 侧边栏主体 */}
     <aside className="resume-sidebar no-print w-56 shrink-0 bg-white border-r border-gray-100 flex flex-col h-full overflow-y-auto">
 
-      {/* Header */}
+      {/* 标题区 */}
       <div className="px-4 py-3.5 border-b border-gray-100 shrink-0">
         <h1 className="font-bold text-gray-800 text-sm tracking-tight">Resume Builder</h1>
       </div>
 
+      {/* 功能区域 */}
       <div className="flex-1 flex flex-col gap-6 p-4">
 
-        {/* ── Add Block ── */}
+        {/* ── 添加区块 ── */}
         <section>
           <h2 className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2.5">Add Block</h2>
           <div className="flex flex-col gap-1">
@@ -54,18 +66,21 @@ export function Sidebar() {
           </div>
         </section>
 
-        {/* ── Appearance ── */}
+        {/* ── 外观设置 ── */}
         <section>
           <h2 className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Appearance</h2>
 
+          {/* 颜色选择器 */}
           <ColorPicker color={color} onChange={setColor} />
 
+          {/* 字体选择器 */}
           <FontSelector
             value={font}
             onChange={(id) => setFont(id as FontId)}
             fonts={[...FONT_OPTIONS]}
           />
 
+          {/* 内边距滑块 */}
           <div className="space-y-3 mt-4">
             <PaddingSlider label="Padding H" value={paddingH} onChange={setPaddingH} color={color} />
             <PaddingSlider label="Padding V" value={paddingV} onChange={setPaddingV} color={color} />
@@ -74,7 +89,7 @@ export function Sidebar() {
 
       </div>
 
-      {/* ── AI Actions ── */}
+      {/* ── AI 操作区 ── */}
       <div className="p-4 border-t border-gray-100 shrink-0 space-y-2">
         <button
           onClick={() => setImportPanelOpen(true)}
@@ -107,7 +122,7 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* ── Export ── */}
+      {/* ── 导出按钮 ── */}
       <div className="p-4 border-t border-gray-100 shrink-0">
         <button
           onClick={() => window.print()}
@@ -120,6 +135,7 @@ export function Sidebar() {
 
     </aside>
 
+    {/* 导入面板 */}
     {importPanelOpen && (
       <ImportJsonPanel
         onConfirm={importFromJson}

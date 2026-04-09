@@ -3,12 +3,24 @@ import { Bot, GripVertical, Sparkles, Trash2, X } from "lucide-react";
 import { useAIChat } from "../../hooks/useAIChat";
 import { ChatMessage, StreamingIndicator } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
-import { useResume } from "../../context";
+import { useResume } from "../../useResume";
 
 type AIChatPanelProps = {
   onClose: () => void;
 };
 
+/**
+ * AIChatPanel - AI 助手聊天面板
+ *
+ * 功能：
+ * - 可拖拽调整大小的悬浮面板（右下角固定定位）
+ * - 消息列表展示（用户/助手消息气泡）
+ * - 流式响应支持（显示加载动画和实时内容）
+ * - 从 localStorage 恢复聊天历史
+ * - AI 响应自动尝试导入为简历 JSON
+ *
+ * @param onClose - 关闭面板回调
+ */
 export function AIChatPanel({ onClose }: AIChatPanelProps) {
   const { color } = useResume();
   const {
@@ -27,6 +39,7 @@ export function AIChatPanel({ onClose }: AIChatPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const resizeStartRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
 
+  // ── 拖拽调整大小 ─────────────────────────────────────────────────────────
   const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
     const el = panelRef.current;
@@ -70,7 +83,7 @@ export function AIChatPanel({ onClose }: AIChatPanelProps) {
       aria-label="AI Assistant"
       aria-modal
     >
-      {/* Header */}
+      {/* 头部：标题、清空按钮、关闭按钮、拖拽手柄 */}
       <ChatHeader
         color={color}
         onClose={onClose}
@@ -80,7 +93,7 @@ export function AIChatPanel({ onClose }: AIChatPanelProps) {
         isStreaming={isStreaming}
       />
 
-      {/* Messages */}
+      {/* 消息列表区域 */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50/50">
         {messages.length === 0 && !streamingContent && (
           <ChatEmpty color={color} />
@@ -101,7 +114,7 @@ export function AIChatPanel({ onClose }: AIChatPanelProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
+      {/* 输入区域 */}
       <div className="shrink-0 p-4 pt-3 border-t border-gray-100 bg-white">
         <ChatInput
           value={input}
@@ -115,15 +128,16 @@ export function AIChatPanel({ onClose }: AIChatPanelProps) {
   );
 }
 
-interface ChatHeaderProps {
-  color: string;
-  onClose: () => void;
-  onClear: () => void;
-  onResizeStart: (e: React.MouseEvent) => void;
-  canClear: boolean;
-  isStreaming: boolean;
-}
-
+/**
+ * ChatHeader - 聊天面板头部组件
+ *
+ * @param color - 主题色
+ * @param onClose - 关闭回调
+ * @param onClear - 清空聊天回调
+ * @param onResizeStart - 开始拖拽回调
+ * @param canClear - 是否可以清空（无消息时隐藏按钮）
+ * @param isStreaming - 是否正在流式输出
+ */
 function ChatHeader({ color, onClose, onClear, onResizeStart, canClear, isStreaming }: ChatHeaderProps) {
   return (
     <div
@@ -177,10 +191,10 @@ function ChatHeader({ color, onClose, onClear, onResizeStart, canClear, isStream
   );
 }
 
-interface ChatEmptyProps {
-  color: string;
-}
-
+/**
+ * ChatEmpty - 空状态提示组件
+ * 当没有消息时显示引导用户使用的提示
+ */
 function ChatEmpty({ color }: ChatEmptyProps) {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center">

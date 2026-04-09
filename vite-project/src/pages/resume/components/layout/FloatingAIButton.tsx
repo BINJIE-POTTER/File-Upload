@@ -1,10 +1,16 @@
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
-import { useResume } from "../../context";
+import { useResume } from "../../useResume";
 import { AIChatPanel } from "../chat/AIChatPanel";
 
 /**
- * Floating AI button fixed at right-bottom. Expands to a resizable chat panel.
+ * FloatingAIButton - 悬浮 AI 按钮
+ *
+ * 固定在右下角的浮动按钮，点击后展开为可调整大小的聊天面板
+ *
+ * 状态：
+ * - collapsed（默认）：显示闪烁的 AI 图标按钮
+ * - expanded：显示 AIChatPanel 面板
  */
 export function FloatingAIButton() {
   const { color } = useResume();

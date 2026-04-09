@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
-import { useResume } from "../../context";
+import { useResume } from "../../useResume";
 import { useContentEditable } from "../../hooks/useContentEditable";
 import { BadgeInsertPanel } from "./BadgeInsertPanel";
 import { TextFormatPanel } from "./TextFormatPanel";
@@ -13,11 +13,17 @@ type CEProps = {
 };
 
 /**
- * A controlled contenteditable field.
- * - DOM is managed imperatively (not via dangerouslySetInnerHTML) so React
- *   never clobbers text the user is actively typing.
- * - Calls onCommit(innerHTML) only on blur.
- * - Right-click shows badge insert panel; badge inserted at cursor, inline, no line-break.
+ * CE - 可编辑内容区域组件
+ *
+ * 一个受控的 contenteditable 字段：
+ * - DOM 通过命令式管理（不是 dangerouslySetInnerHTML），避免 React 破坏用户正在输入的内容
+ * - 仅在失焦时调用 onCommit(innerHTML)
+ * - 右键显示徽章插入面板；徽章在光标位置内联插入，不换行
+ *
+ * @param html - HTML 内容
+ * @param onCommit - 提交回调（失焦时传入新的 innerHTML）
+ * @param className - 可选的额外类名
+ * @param placeholder - 占位符
  */
 export function CE({ html, onCommit, className, placeholder }: CEProps) {
   const { color, lightColor } = useResume();
@@ -41,8 +47,10 @@ export function CE({ html, onCommit, className, placeholder }: CEProps) {
     updateFormatPanel,
   } = useContentEditable({ html, onCommit });
 
+  // ── 渲染 ─────────────────────────────────────────────────────────────────
   return (
     <>
+      {/* 可编辑区域 */}
       <div
         ref={ref}
         contentEditable
@@ -69,6 +77,8 @@ export function CE({ html, onCommit, className, placeholder }: CEProps) {
           if (text) document.execCommand("insertText", false, text);
         }}
       />
+
+      {/* 文本格式工具栏（通过 Portal 渲染到 body） */}
       {formatPanelOpen && createPortal(
         <div
           className="fixed z-50"

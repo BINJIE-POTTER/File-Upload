@@ -9,11 +9,21 @@ type TextFormatPanelProps = {
   primaryColor?: string;
 };
 
+/**
+ * TextFormatPanel - 文本格式工具栏
+ *
+ * 在选中文本时显示，提供加粗、斜体、颜色功能
+ *
+ * @param onFormat - 格式化命令回调（bold/italic/color）
+ * @param onClose - 关闭面板回调
+ * @param primaryColor - 主题色（会添加到预设颜色列表开头）
+ */
 export function TextFormatPanel({
   onFormat,
   onClose,
   primaryColor,
 }: TextFormatPanelProps) {
+  // ── ESC 键关闭 ───────────────────────────────────────────────────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose?.();
@@ -22,6 +32,7 @@ export function TextFormatPanel({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
+  // ── 处理颜色预设列表（将主题色添加到列表开头） ──────────────────────────
   const presets = TEXT_FORMAT_PRESET_COLORS as readonly string[];
   const colors =
     primaryColor && !presets.includes(primaryColor)
@@ -36,6 +47,7 @@ export function TextFormatPanel({
       aria-label="Format text"
       onMouseDown={(e) => e.preventDefault()}
     >
+      {/* 加粗按钮 */}
       <button
         type="button"
         onClick={() => onFormat("bold")}
@@ -44,6 +56,7 @@ export function TextFormatPanel({
       >
         <Bold className="size-4" />
       </button>
+      {/* 斜体按钮 */}
       <button
         type="button"
         onClick={() => onFormat("italic")}
@@ -53,6 +66,7 @@ export function TextFormatPanel({
         <Italic className="size-4" />
       </button>
       <div className="w-px h-5 bg-border" aria-hidden />
+      {/* 颜色选择按钮列表 */}
       <div className="flex gap-0.5">
         {colors.map((c) => (
           <button
