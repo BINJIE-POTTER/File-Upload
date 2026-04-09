@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
-import { useResume } from "../context";
-import { AIChatPanel } from "./AIChatPanel";
+import { useResume } from "../../context";
+import { AIChatPanel } from "../chat/AIChatPanel";
 
 /**
  * Floating AI button fixed at right-bottom. Expands to a resizable chat panel.

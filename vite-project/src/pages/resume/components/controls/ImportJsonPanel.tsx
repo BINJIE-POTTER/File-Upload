@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { type AIResumeData, validateAIResumeData } from "../types";
+import { type AIResumeData, validateAIResumeData } from "../../types";
 
 type ImportJsonPanelProps = {
   onConfirm: (data: AIResumeData) => void;

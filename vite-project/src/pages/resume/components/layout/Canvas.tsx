@@ -1,11 +1,11 @@
 import React from "react";
 import { Loader2 } from "lucide-react";
-import { type Block } from "../types";
-import { useResume, FONT_OPTIONS } from "../context";
-import { PIView    } from "../blocks/PIBlock";
-import { TitleView } from "../blocks/TitleBlock";
-import { ListView  } from "../blocks/ListBlock";
-import { InfoView  } from "../blocks/InfoBlock";
+import { type Block } from "../../types";
+import { useResume, FONT_OPTIONS } from "../../context";
+import { PIView    } from "../../blocks/PIBlock";
+import { TitleView } from "../../blocks/TitleBlock";
+import { ListView  } from "../../blocks/ListBlock";
+import { InfoView  } from "../../blocks/InfoBlock";
 
 /** The scrollable A4-sized resume preview. Renders all blocks in order. */
 export function Canvas() {

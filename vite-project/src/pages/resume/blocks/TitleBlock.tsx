@@ -1,7 +1,7 @@
 import { type Block, type TitleBlock } from "../types";
 import { useResume } from "../context";
-import { CE } from "../components/CE";
-import { BlockPanel } from "../components/BlockPanel";
+import { CE } from "../components/editor/CE";
+import { BlockPanel } from "../components/editor/BlockPanel";
 import { useDebounceHover } from "../hooks";
 
 /** Section title with an optional subtitle and a coloured divider line. */

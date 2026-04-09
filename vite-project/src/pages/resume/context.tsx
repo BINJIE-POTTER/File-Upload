@@ -1,14 +1,10 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { type Block, type AIResumeData, DEFAULTS, mkPI, mkTitle, mkList, mkInfo, lighten, convertAIResponse } from "./types";
+import { FONT_OPTIONS } from "./components/constants";
 
 const STORAGE_KEY = "resume-data";
 
-export const FONT_OPTIONS = [
-  { id: "sans", label: "Sans", fontFamily: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', ui-sans-serif, system-ui, sans-serif" },
-  { id: "serif", label: "Serif", fontFamily: "'Noto Serif SC', 'PingFang SC', 'Microsoft YaHei', ui-serif, Georgia, Cambria, serif" },
-  { id: "mono", label: "Mono", fontFamily: "'Cascadia Code', 'Fira Code', ui-monospace, monospace" },
-] as const;
 export type FontId = (typeof FONT_OPTIONS)[number]["id"];
 
 type PersistedResume = {

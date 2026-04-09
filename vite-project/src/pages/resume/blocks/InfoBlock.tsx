@@ -1,6 +1,6 @@
 import { type Block, type InfoBlock } from "../types";
-import { CE } from "../components/CE";
-import { BlockPanel } from "../components/BlockPanel";
+import { CE } from "../components/editor/CE";
+import { BlockPanel } from "../components/editor/BlockPanel";
 import { useDebounceHover } from "../hooks";
 import { useResume } from "../context";
 

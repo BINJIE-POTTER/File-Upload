@@ -2,8 +2,8 @@ import React from "react";
 import { Trash2, Plus } from "lucide-react";
 import { uid, type Block, type ListBlock } from "../types";
 import { useResume } from "../context";
-import { CE } from "../components/CE";
-import { BlockPanel } from "../components/BlockPanel";
+import { CE } from "../components/editor/CE";
+import { BlockPanel } from "../components/editor/BlockPanel";
 import { useDebounceHover } from "../hooks";
 
 // ── Sub-components ────────────────────────────────────────────────────────────

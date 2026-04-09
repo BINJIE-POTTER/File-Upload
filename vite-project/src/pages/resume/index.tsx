@@ -1,7 +1,8 @@
-import { ResumeProvider, useResume, FONT_OPTIONS } from "./context";
-import { Sidebar } from "./components/Sidebar";
-import { Canvas } from "./components/Canvas";
-import { FloatingAIButton } from "./components/FloatingAIButton";
+import { ResumeProvider, useResume } from "./context";
+import { FONT_OPTIONS } from "./components/constants";
+import { Sidebar } from "./components/layout/Sidebar";
+import { Canvas } from "./components/layout/Canvas";
+import { FloatingAIButton } from "./components/layout/FloatingAIButton";
 
 /**
  * Injects global CSS that reacts to colour / padding state changes.

@@ -1,38 +1,58 @@
-import React, { useState, useRef, useLayoutEffect, useEffect } from "react";
-import { createPortal } from "react-dom";
-import { BadgeInsertPanel, createBadgeHtml, type BadgeVariant } from "./BadgeInsertPanel";
-import { TextFormatPanel } from "./TextFormatPanel";
-import { cn } from "@/lib/utils";
-import { useResume } from "../context";
+import { useState, useRef, useEffect, useCallback, useLayoutEffect } from "react";
+import { createBadgeHtml, type BadgeVariant } from "../components/editor/BadgeInsertPanel";
+import { CE_CURSOR_MARKER_ID, EDITABLE_BADGE_VARIANTS } from "../components/constants";
 
-const EDITABLE_VARIANTS = ["default", "secondary", "outline"] as const;
 const toEditableVariant = (v: string | null): BadgeVariant =>
-  EDITABLE_VARIANTS.includes(v as BadgeVariant) ? (v as BadgeVariant) : "default";
+  EDITABLE_BADGE_VARIANTS.includes(v as BadgeVariant) ? (v as BadgeVariant) : "default";
 
-/**
- * A controlled contenteditable field.
- * - DOM is managed imperatively (not via dangerouslySetInnerHTML) so React
- *   never clobbers text the user is actively typing.
- * - Calls onCommit(innerHTML) only on blur.
- * - Right-click shows badge insert panel; badge inserted at cursor, inline, no line-break.
- */
-export function CE({
-  html,
-  onCommit,
-  className,
-  placeholder,
-}: {
+interface EditState {
+  variant: BadgeVariant;
+  text: string;
+}
+
+interface UseContentEditableOptions {
   html: string;
   onCommit: (h: string) => void;
-  className?: string;
-  placeholder?: string;
-}) {
-  const { color, lightColor } = useResume();
+  onBadgeEdit?: (badge: HTMLElement, e: React.MouseEvent) => void;
+}
+
+interface UseContentEditableReturn {
+  focused: boolean;
+  setFocused: (v: boolean) => void;
+  panelOpen: boolean;
+  setPanelOpen: (v: boolean) => void;
+  panelMode: "insert" | "edit";
+  setPanelMode: (v: "insert" | "edit") => void;
+  panelPos: { x: number; y: number };
+  setPanelPos: (v: { x: number; y: number }) => void;
+  editState: EditState | null;
+  setEditState: (v: EditState | null) => void;
+  formatPanelOpen: boolean;
+  setFormatPanelOpen: (v: boolean) => void;
+  formatPanelPos: { x: number; y: number };
+  setFormatPanelPos: (v: { x: number; y: number }) => void;
+  ref: React.RefObject<HTMLDivElement | null>;
+  handleFocus: () => void;
+  handleBlur: (e: React.FocusEvent<HTMLDivElement>) => void;
+  handleContextMenu: (e: React.MouseEvent) => void;
+  handleBadgeClick: (e: React.MouseEvent) => void;
+  handleBadgeConfirm: (variant: BadgeVariant, text: string) => void;
+  handleFormat: (cmd: "bold" | "italic" | "color", value?: string) => void;
+  handleFormatPanelClose: () => void;
+  handlePanelClose: () => void;
+  updateFormatPanel: () => void;
+}
+
+export function useContentEditable({
+  html,
+  onCommit,
+  onBadgeEdit: _onBadgeEdit,
+}: UseContentEditableOptions): UseContentEditableReturn {
   const [focused, setFocused] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelMode, setPanelMode] = useState<"insert" | "edit">("insert");
   const [panelPos, setPanelPos] = useState({ x: 0, y: 0 });
-  const [editState, setEditState] = useState<{ variant: BadgeVariant; text: string } | null>(null);
+  const [editState, setEditState] = useState<EditState | null>(null);
   const editTargetRef = useRef<HTMLElement | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const focusedRef = useRef(false);
@@ -50,18 +70,12 @@ export function CE({
     if (ref.current && !focusedRef.current && !panelOpen && !formatPanelOpen) ref.current.innerHTML = html;
   }, [html, panelOpen, formatPanelOpen]);
 
-  /**
-   * 聚焦
-   */
-  const handleFocus = () => { 
-    focusedRef.current = true; 
-    setFocused(true); 
-  };
-  /**
-   * 失焦
-   * @param e - The blur event.
-   */
-  const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+  const handleFocus = useCallback(() => {
+    focusedRef.current = true;
+    setFocused(true);
+  }, []);
+
+  const handleBlur = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
     focusedRef.current = false;
     setFocused(false);
 
@@ -69,31 +83,31 @@ export function CE({
     el.querySelectorAll("[data-badge-selected]").forEach((b) => b.removeAttribute("data-badge-selected"));
     if (!el.textContent?.trim()) el.innerHTML = "";
     onCommit(el.innerHTML);
-  };
+  }, [onCommit]);
 
-  const cursorMarkerId = "ce-badge-cursor-marker";
-
-  /**
-   * 插入光标标记到当前光标位置，用于插入 badge 后，光标自动定位到 badge 后面。
-   */
-  const insertCursorMarker = () => {
+  const insertCursorMarker = useCallback(() => {
     const el = ref.current;
     const range = savedRangeRef.current;
     if (!el || !range) return;
 
     const marker = document.createElement("span");
-    marker.setAttribute("data-badge-cursor-marker", cursorMarkerId);
+    marker.setAttribute("data-badge-cursor-marker", CE_CURSOR_MARKER_ID);
     marker.contentEditable = "false";
     marker.className = "inline-block w-px min-h-[1em] align-middle bg-current";
     range.collapse(true);
     range.insertNode(marker);
-  };
+  }, []);
 
-  const removeCursorMarker = () => {
-    ref.current?.querySelector(`[data-badge-cursor-marker="${cursorMarkerId}"]`)?.remove();
-  };
+  const removeCursorMarker = useCallback(() => {
+    ref.current?.querySelector(`[data-badge-cursor-marker="${CE_CURSOR_MARKER_ID}"]`)?.remove();
+  }, []);
 
-  const openInsertPanel = (e: React.MouseEvent) => {
+  const clearEditSelection = useCallback(() => {
+    editTargetRef.current?.removeAttribute("data-badge-selected");
+    editTargetRef.current = null;
+  }, []);
+
+  const openInsertPanel = useCallback((e: React.MouseEvent) => {
     const sel = document.getSelection();
     const range = sel?.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
     if (range && ref.current?.contains(range.commonAncestorContainer)) {
@@ -106,9 +120,9 @@ export function CE({
       setPanelOpen(true);
       setTimeout(insertCursorMarker, 0);
     }
-  };
+  }, [insertCursorMarker]);
 
-  const openEditPanel = (badge: HTMLElement, e: React.MouseEvent) => {
+  const openEditPanel = useCallback((badge: HTMLElement, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     setFormatPanelOpen(false);
@@ -122,14 +136,9 @@ export function CE({
     setPanelPos({ x: rect.left, y: rect.bottom + 4 });
     setPanelOpen(true);
     removeCursorMarker();
-  };
+  }, [removeCursorMarker]);
 
-  const clearEditSelection = () => {
-    editTargetRef.current?.removeAttribute("data-badge-selected");
-    editTargetRef.current = null;
-  };
-
-  const updateFormatPanel = () => {
+  const updateFormatPanel = useCallback(() => {
     const sel = document.getSelection();
     const el = ref.current;
     if (!el || !sel?.rangeCount || panelOpen) return;
@@ -151,9 +160,9 @@ export function CE({
     const rect = range.getBoundingClientRect();
     setFormatPanelPos({ x: rect.left + rect.width / 2, y: rect.top });
     setFormatPanelOpen(true);
-  };
+  }, [panelOpen]);
 
-  const handleFormat = (cmd: "bold" | "italic" | "color", value?: string) => {
+  const handleFormat = useCallback((cmd: "bold" | "italic" | "color", value?: string) => {
     const el = ref.current;
     const r = savedFormatRangeRef.current;
     if (!el || !r) return;
@@ -167,23 +176,18 @@ export function CE({
     else if (cmd === "italic") document.execCommand("italic");
     else if (cmd === "color" && value) document.execCommand("foreColor", false, value);
     onCommit(el.innerHTML);
-  };
+  }, [onCommit]);
 
-  const handleFormatPanelClose = () => {
+  const handleFormatPanelClose = useCallback(() => {
     setFormatPanelOpen(false);
     savedFormatRangeRef.current = null;
-  };
+  }, []);
 
   useEffect(() => {
     updateFormatPanelRef.current = updateFormatPanel;
   });
 
-  /**
-   * Handles the context menu event.
-   * 双击 badge 打开编辑面板，否则打开插入面板。
-   * @param e - The context menu event.
-   */
-  const handleContextMenu = (e: React.MouseEvent) => {
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     const target = (e.target as HTMLElement).closest("[data-badge]");
     if (target) {
@@ -191,16 +195,16 @@ export function CE({
       return;
     }
     openInsertPanel(e);
-  };
+  }, [openEditPanel, openInsertPanel]);
 
-  const handleBadgeClick = (e: React.MouseEvent) => {
+  const handleBadgeClick = useCallback((e: React.MouseEvent) => {
     const badge = (e.target as HTMLElement).closest("[data-badge]");
     if (badge && ref.current?.contains(badge)) {
       openEditPanel(badge as HTMLElement, e);
     }
-  };
+  }, [openEditPanel]);
 
-  const handleBadgeConfirm = (variant: BadgeVariant, text: string) => {
+  const handleBadgeConfirm = useCallback((variant: BadgeVariant, text: string) => {
     const el = ref.current;
     if (!el) return;
 
@@ -214,7 +218,7 @@ export function CE({
       clearEditSelection();
       if (newBadge) pendingSelectionAfterRef.current = newBadge;
     } else {
-      const marker = el.querySelector(`[data-badge-cursor-marker="${cursorMarkerId}"]`);
+      const marker = el.querySelector(`[data-badge-cursor-marker="${CE_CURSOR_MARKER_ID}"]`);
       const range = document.createRange();
       if (marker) {
         range.setStartBefore(marker);
@@ -258,15 +262,16 @@ export function CE({
     onCommit(el.innerHTML);
     setPanelOpen(false);
     savedRangeRef.current = null;
-  };
+  }, [panelMode, clearEditSelection, removeCursorMarker, onCommit]);
 
-  const handlePanelClose = () => {
+  const handlePanelClose = useCallback(() => {
     removeCursorMarker();
     clearEditSelection();
     setPanelOpen(false);
     savedRangeRef.current = null;
-  };
+  }, [removeCursorMarker, clearEditSelection]);
 
+  // Close panel on outside click
   useEffect(() => {
     if (!panelOpen) return;
     const closePanel = () => {
@@ -289,8 +294,9 @@ export function CE({
       document.removeEventListener("mousedown", handleClickOutside);
       window.removeEventListener("focusin", handleFocusOutside);
     };
-  }, [panelOpen]);
+  }, [panelOpen, removeCursorMarker, clearEditSelection]);
 
+  // Close format panel on outside click
   useEffect(() => {
     if (!formatPanelOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -299,86 +305,39 @@ export function CE({
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [formatPanelOpen]);
+  }, [formatPanelOpen, handleFormatPanelClose]);
 
+  // Selection change listener
   useEffect(() => {
     const handleSelectionChange = () => updateFormatPanelRef.current();
     document.addEventListener("selectionchange", handleSelectionChange);
     return () => document.removeEventListener("selectionchange", handleSelectionChange);
   }, []);
 
-  const ceDiv = (
-    <div
-      ref={ref}
-      contentEditable
-      suppressContentEditableWarning
-      data-ph={placeholder}
-      className={cn(
-        "outline-none cursor-text rounded transition-all", 
-        className,
-      )}
-      style={focused ? {
-        outline: `2px solid ${color}35`,
-        outlineOffset: "2px",
-        borderRadius: "3px",
-        backgroundColor: `${color}07`,
-      } : {}}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      onMouseUp={updateFormatPanel}
-      onContextMenu={handleContextMenu}
-      onClick={handleBadgeClick}
-      onPaste={(e) => {
-        e.preventDefault();
-        const text = e.clipboardData?.getData("text/plain") ?? "";
-        if (text) document.execCommand("insertText", false, text);
-      }}
-    />
-  );
-
-  return (
-    <>
-      {ceDiv}
-      {formatPanelOpen &&
-        createPortal(
-          <div
-            className="fixed z-50"
-            style={{
-              left: formatPanelPos.x,
-              top: formatPanelPos.y - 8,
-              transform: "translate(-50%, -100%)",
-            }}
-          >
-            <TextFormatPanel
-              onFormat={handleFormat}
-              onClose={handleFormatPanelClose}
-              primaryColor={color}
-            />
-          </div>,
-          document.body
-        )}
-      {panelOpen &&
-        createPortal(
-          <div
-            data-badge-insert-panel
-            className="fixed z-50 rounded-md border bg-popover p-0 shadow-lg"
-            style={{ left: panelPos.x, top: panelPos.y }}
-            role="dialog"
-            aria-label="Insert badge"
-          >
-            <BadgeInsertPanel
-              key={panelMode === "edit" ? `edit-${editState?.text ?? ""}` : "insert"}
-              onConfirm={handleBadgeConfirm}
-              onClose={handlePanelClose}
-              color={color}
-              lightColor={lightColor}
-              initialVariant={editState?.variant}
-              initialText={editState?.text}
-              isEdit={panelMode === "edit"}
-            />
-          </div>,
-          document.body
-        )}
-    </>
-  );
+  return {
+    focused,
+    setFocused,
+    panelOpen,
+    setPanelOpen,
+    panelMode,
+    setPanelMode,
+    panelPos,
+    setPanelPos,
+    editState,
+    setEditState,
+    formatPanelOpen,
+    setFormatPanelOpen,
+    formatPanelPos,
+    setFormatPanelPos,
+    ref,
+    handleFocus,
+    handleBlur,
+    handleContextMenu,
+    handleBadgeClick,
+    handleBadgeConfirm,
+    handleFormat,
+    handleFormatPanelClose,
+    handlePanelClose,
+    updateFormatPanel,
+  };
 }

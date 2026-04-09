@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect } from "react";
 import { Badge, badgeVariants } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { BADGE_VARIANTS, type BadgeVariant } from "../constants";
 
-export const BADGE_VARIANTS = ["default", "secondary", "outline"] as const;
-export type BadgeVariant = (typeof BADGE_VARIANTS)[number];
+export type { BadgeVariant };
+export { BADGE_VARIANTS };
 
 const getBadgePreviewStyle = (
   variant: BadgeVariant,

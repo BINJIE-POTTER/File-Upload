@@ -1,18 +1,12 @@
 import { useState } from "react";
 import { FileDown, FileJson, Plus, Sparkles, Undo2 } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
-import { useResume, FONT_OPTIONS } from "../context";
-import { type Block, DEMO_AI_RESPONSE } from "../types";
-import { ImportJsonPanel } from "./ImportJsonPanel";
-
-const COLOR_PRESETS = ["#3b82f6", "#6366f1", "#10b981", "#f59e0b", "#ef4444", "#64748b"];
-
-const BLOCK_TYPES: { type: Block["type"]; label: string; desc: string }[] = [
-  { type: "pi",    label: "Personal Info",  desc: "Name, contacts & avatar"  },
-  { type: "title", label: "Section Title",  desc: "Heading with divider"     },
-  { type: "list",  label: "List",           desc: "Bullet or numbered items" },
-  { type: "info",  label: "Info Line",       desc: "Left & right-aligned row"  },
-];
+import { useResume, FONT_OPTIONS, type FontId } from "../../context";
+import { DEMO_AI_RESPONSE } from "../../types";
+import { BLOCK_TYPES } from "../constants";
+import { ImportJsonPanel } from "../controls/ImportJsonPanel";
+import { ColorPicker } from "../controls/ColorPicker";
+import { PaddingSlider } from "../controls/PaddingSlider";
+import { FontSelector } from "../controls/FontSelector";
 
 /**
  * Left sidebar — block palette, colour picker, padding slider, and PDF export.
@@ -64,91 +58,17 @@ export function Sidebar() {
         <section>
           <h2 className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Appearance</h2>
 
-          {/* Primary colour swatches + custom picker */}
-          <div className="mb-4">
-            <label className="text-xs text-gray-500 mb-2 block">Primary Color</label>
-            <div className="flex flex-wrap gap-2 mb-2.5">
-              {COLOR_PRESETS.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setColor(p)}
-                  className="w-6 h-6 rounded-full transition-transform hover:scale-110 shrink-0"
-                  style={{
-                    background: p,
-                    outline: color === p ? `2.5px solid ${p}` : "2.5px solid transparent",
-                    outlineOffset: "2px",
-                  }}
-                />
-              ))}
-            </div>
-            <div className="flex items-center gap-2">
-              <label
-                className="relative w-7 h-7 rounded-full overflow-hidden cursor-pointer shrink-0"
-                style={{ background: color, outline: "2px solid #e5e7eb" }}
-                title="Custom color"
-              >
-                <input
-                  type="color"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-                />
-              </label>
-              <span className="text-xs font-mono text-gray-400">{color}</span>
-            </div>
-          </div>
+          <ColorPicker color={color} onChange={setColor} />
 
-          {/* Font style */}
-          <div className="mb-4">
-            <label className="text-xs text-gray-500 block mb-2">Font</label>
-            <div className="flex gap-1">
-              {FONT_OPTIONS.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setFont(f.id)}
-                  className={`flex-1 px-2 py-1.5 rounded text-xs transition-colors ${
-                    font === f.id ? "bg-gray-100 font-medium text-gray-800" : "text-gray-500 hover:bg-gray-50"
-                  }`}
-                  style={font === f.id ? { fontFamily: f.fontFamily } : undefined}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <FontSelector
+            value={font}
+            onChange={(id) => setFont(id as FontId)}
+            fonts={[...FONT_OPTIONS]}
+          />
 
-          {/* Page padding */}
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs text-gray-500 block mb-2">
-                Padding H <span className="font-mono text-gray-400">{paddingH}mm</span>
-              </label>
-              <div style={{ "--primary": color, "--ring": color } as React.CSSProperties}>
-                <Slider
-                  min={8}
-                  max={25}
-                  step={1}
-                  value={[paddingH]}
-                  onValueChange={([v]) => setPaddingH(v)}
-                  className="[&_[data-slot=slider-range]]:bg-[var(--primary)] [&_[data-slot=slider-thumb]]:border-[var(--primary)]"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 block mb-2">
-                Padding V <span className="font-mono text-gray-400">{paddingV}mm</span>
-              </label>
-              <div style={{ "--primary": color, "--ring": color } as React.CSSProperties}>
-                <Slider
-                  min={8}
-                  max={25}
-                  step={1}
-                  value={[paddingV]}
-                  onValueChange={([v]) => setPaddingV(v)}
-                  className="[&_[data-slot=slider-range]]:bg-[var(--primary)] [&_[data-slot=slider-thumb]]:border-[var(--primary)]"
-                />
-              </div>
-            </div>
+          <div className="space-y-3 mt-4">
+            <PaddingSlider label="Padding H" value={paddingH} onChange={setPaddingH} color={color} />
+            <PaddingSlider label="Padding V" value={paddingV} onChange={setPaddingV} color={color} />
           </div>
         </section>
 

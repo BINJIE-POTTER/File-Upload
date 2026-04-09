@@ -1,17 +1,7 @@
 import { useEffect } from "react";
 import { Bold, Italic } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const PRESET_COLORS = [
-  "#000000",
-  "#3b82f6",
-  "#ef4444",
-  "#22c55e",
-  "#eab308",
-  "#8b5cf6",
-  "#ec4899",
-  "#64748b",
-];
+import { TEXT_FORMAT_PRESET_COLORS } from "../constants";
 
 type TextFormatPanelProps = {
   onFormat: (cmd: "bold" | "italic" | "color", value?: string) => void;
@@ -32,9 +22,11 @@ export function TextFormatPanel({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  const colors = primaryColor && !PRESET_COLORS.includes(primaryColor)
-    ? [primaryColor, ...PRESET_COLORS]
-    : PRESET_COLORS;
+  const presets = TEXT_FORMAT_PRESET_COLORS as readonly string[];
+  const colors =
+    primaryColor && !presets.includes(primaryColor)
+      ? [primaryColor, ...presets]
+      : presets;
 
   return (
     <div
