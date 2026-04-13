@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileDown, FileJson, Plus, Sparkles, Undo2 } from "lucide-react";
+import { FileDown, FileJson, Plus, Sparkles, Undo2, Redo2 } from "lucide-react";
 import { useResume } from "../../useResume";
 import type { FontId } from "../constants";
 import { DEMO_AI_RESPONSE } from "../../types";
@@ -22,7 +22,7 @@ import { FontSelector } from "../controls/FontSelector";
  */
 export function Sidebar() {
   // ── 状态 ─────────────────────────────────────────────────────────────────
-  const { color, setColor, paddingH, setPaddingH, paddingV, setPaddingV, font, setFont, addBlock, isLoading, loadAIResponse, importFromJson, restoreBlocks, canRestore } = useResume();
+  const { color, setColor, paddingH, setPaddingH, paddingV, setPaddingV, font, setFont, addBlock, isLoading, loadAIResponse, importFromJson, undo, redo, canUndo, canRedo } = useResume();
   const [importPanelOpen, setImportPanelOpen] = useState(false);
 
   // ── 处理 Demo AI 按钮点击 ────────────────────────────────────────────────
@@ -110,14 +110,24 @@ export function Sidebar() {
           <Sparkles size={14} /> {isLoading ? "Generating…" : "Demo AI"}
         </button>
 
-        {canRestore && (
+        {canUndo && (
           <button
-            onClick={restoreBlocks}
+            onClick={undo}
             className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-            aria-label="Restore previous resume"
+            aria-label="Undo last change"
             tabIndex={0}
           >
-            <Undo2 size={14} /> Restore Previous
+            <Undo2 size={14} /> Undo
+          </button>
+        )}
+        {canRedo && (
+          <button
+            onClick={redo}
+            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+            aria-label="Redo last undone change"
+            tabIndex={0}
+          >
+            <Redo2 size={14} /> Redo
           </button>
         )}
       </div>

@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { sendDifyChat } from "@/services/chatApi";
 import { loadChatFromStorage, saveChatToStorage, type Message } from "../utils/storage";
-import { useResume } from "../useResume";
 import { validateAIResumeData, type AIResumeData } from "../types";
 
 /**
@@ -15,6 +14,9 @@ import { validateAIResumeData, type AIResumeData } from "../types";
  * - 对话 ID（用于多轮对话）
  * - 面板尺寸（可拖拽调整）
  * - 与 localStorage 的持久化同步
+ *
+ * 注意：本 Hook 不直接调用 importFromJson（避免与 useResume 的循环依赖）
+ * 调用方应监听 appliedJson，在有值时自行调用 importFromJson
  */
 interface UseAIChatReturn {
   messages: Message[];
@@ -27,12 +29,11 @@ interface UseAIChatReturn {
   setPanelSize: (v: { w: number; h: number }) => void;
   sendMessage: () => Promise<void>;
   clearMessages: () => void;
-  handleTryApplyJson: (text: string) => boolean;
+  /** 尝试解析文本中的 JSON 格式简历数据；返回解析后的数据或 null */
+  tryParseJson: (text: string) => AIResumeData | null;
 }
 
 export function useAIChat(): UseAIChatReturn {
-  const { importFromJson } = useResume();
-
   // ── 状态 ─────────────────────────────────────────────────────────────────
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -43,6 +44,8 @@ export function useAIChat(): UseAIChatReturn {
   const [panelSize, setPanelSize] = useState({ w: 440, h: 560 });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  // 保存最近一次 AI 回复文本（用于 showAppliedTip 判断）
+  const lastAssistantTextRef = useRef("");
 
   // ── 挂载时从 localStorage 加载聊天记录 ────────────────────────────────────
   useEffect(() => {
@@ -75,33 +78,34 @@ export function useAIChat(): UseAIChatReturn {
     setMessages([]);
     setConversationId(null);
     setStreamingContent("");
+    lastAssistantTextRef.current = "";
     saveChatToStorage({ messages: [], conversationId: null, updatedAt: Date.now() });
     toast.success("Chat cleared");
   }, []);
 
-  // ── 尝试从 AI 响应中解析并应用 JSON ──────────────────────────────────────
+  // ── 从文本中提取 JSON ─────────────────────────────────────────────────────
   /**
-   * 尝试从文本中提取 JSON 并验证格式
-   * 如果验证通过，导入到简历数据中
-   * 返回是否成功导入
+   * tryParseJson - 尝试从文本中解析 AI 简历 JSON
+   *
+   * 支持两种格式：
+   * - Markdown 代码块包裹的 JSON（```json ... ```）
+   * - 直接的 JSON 对象字符串
+   *
+   * @param text - AI 响应文本
+   * @returns 解析成功返回 AIResumeData，否则返回 null
    */
-  const handleTryApplyJson = useCallback(
-    (text: string): boolean => {
-      const extracted = extractJsonFromText(text) ?? text;
-      try {
-        const parsed = JSON.parse(extracted) as unknown;
-        if (validateAIResumeData(parsed)) {
-          importFromJson(parsed as AIResumeData);
-          toast.success("Resume updated from AI");
-          return true;
-        }
-      } catch {
-        // Not valid JSON, ignore
+  const tryParseJson = useCallback((text: string): AIResumeData | null => {
+    const extracted = extractJsonFromText(text) ?? text;
+    try {
+      const parsed = JSON.parse(extracted) as unknown;
+      if (validateAIResumeData(parsed)) {
+        return parsed as AIResumeData;
       }
-      return false;
-    },
-    [importFromJson]
-  );
+    } catch {
+      // 不是合法 JSON，忽略
+    }
+    return null;
+  }, []);
 
   // ── 发送消息 ──────────────────────────────────────────────────────────────
   /**
@@ -109,12 +113,13 @@ export function useAIChat(): UseAIChatReturn {
    * 处理响应并更新消息列表
    * 流式响应暂未实现（blocking mode）
    */
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     const query = input.trim();
     if (!query || isStreaming) return;
 
     setInput("");
-    setMessages((m) => [...m, { role: "user", content: query }]);
+    const userMsg: Message = { id: crypto.randomUUID(), role: "user", content: query };
+    setMessages((m) => [...m, userMsg]);
     setStreamingContent("");
     setIsStreaming(true);
 
@@ -124,25 +129,28 @@ export function useAIChat(): UseAIChatReturn {
         conversation_id: conversationId ?? undefined,
       });
 
-      // Blocking mode returns { event, answer, conversation_id, ... }
+      // Blocking mode 返回 { event, answer, conversation_id, ... }
       const fullText = typeof data.answer === "string" ? data.answer : "";
       if (data.conversation_id) setConversationId(data.conversation_id);
 
+      const assistantMsg: Message = { id: crypto.randomUUID(), role: "assistant", content: fullText };
+      lastAssistantTextRef.current = fullText;
       setStreamingContent("");
-      setMessages((m) => [...m, { role: "assistant", content: fullText }]);
+      setMessages((m) => [...m, assistantMsg]);
 
-      const applied = handleTryApplyJson(fullText);
-      if (!applied && fullText) {
-        toast.info("AI response received. If it was meant to be resume JSON, ensure the format matches.");
+      // 提示用户 AI 已返回 JSON 格式数据
+      if (fullText.trim()) {
+        toast.info("AI response received. If it contains resume JSON, it will be imported automatically.");
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to connect to AI";
       toast.error(msg);
-      setMessages((m) => [...m, { role: "assistant", content: `Error: ${msg}` }]);
+      const errMsg: Message = { id: crypto.randomUUID(), role: "assistant", content: `Error: ${msg}` };
+      setMessages((m) => [...m, errMsg]);
     } finally {
       setIsStreaming(false);
     }
-  };
+  }, [input, isStreaming, conversationId]);
 
   return {
     messages,
@@ -155,19 +163,27 @@ export function useAIChat(): UseAIChatReturn {
     setPanelSize,
     sendMessage,
     clearMessages: handleClearChat,
-    handleTryApplyJson,
+    tryParseJson,
   };
 }
 
 /**
- * 从文本中提取 JSON，处理 Markdown 代码块
- * @param text - 文本内容
+ * extractJsonFromText - 从文本中提取 JSON 字符串
+ *
+ * 支持两种格式：
+ * - Markdown 代码块：```json ... ``` 或 ``` ...
+ * - 直接 JSON 对象：{ ... }
+ *
+ * @param text - 原始文本
  * @returns JSON 字符串或 null
  */
 function extractJsonFromText(text: string): string | null {
   const trimmed = text.trim();
+  // 匹配 Markdown 代码块
   const jsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (jsonMatch) return jsonMatch[1].trim();
+
+  // 匹配直接 JSON 对象
   const braceStart = trimmed.indexOf("{");
   if (braceStart >= 0) {
     let depth = 0;

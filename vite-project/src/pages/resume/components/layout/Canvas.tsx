@@ -19,43 +19,17 @@ import { InfoView  } from "../../blocks/InfoBlock";
  * - 区块排序（上移/下移）
  */
 export function Canvas() {
-  const { blocks, setBlocks, color, lightColor, paddingH, paddingV, font, isLoading } = useResume();
-
-  // ── 区块更新 ─────────────────────────────────────────────────────────────
-  /**
-   * 对指定 id 的区块应用修改函数
-   */
-  const update = (id: string, fn: (cur: Block) => Block) =>
-    setBlocks(bs => bs.map(b => b.id === id ? fn(b) : b));
-
-  /**
-   * 交换相邻区块的位置
-   * @param i - 当前区块索引
-   * @param dir - 方向（-1 上移，1 下移）
-   */
-  const move = (i: number, dir: -1 | 1) =>
-    setBlocks(bs => {
-      const j = i + dir;
-      if (j < 0 || j >= bs.length) return bs;
-      const a = [...bs];
-      [a[i], a[j]] = [a[j], a[i]];
-      return a;
-    });
-
-  /**
-   * 根据 id 删除区块
-   */
-  const remove = (id: string) => setBlocks(bs => bs.filter(b => b.id !== id));
+  const { blocks, color, lightColor, paddingH, paddingV, font, isLoading, updateBlock, moveBlock, removeBlock } = useResume();
 
   // ── 渲染区块 ─────────────────────────────────────────────────────────────
   /**
    * 根据区块类型渲染对应的视图组件
    */
   const renderBlock = (b: Block, i: number) => {
-    const set   = (fn: (cur: Block) => Block) => update(b.id, fn);
-    const onUp   = () => move(i, -1);
-    const onDown = () => move(i,  1);
-    const onDel  = () => remove(b.id);
+    const set   = (fn: (cur: Block) => Block) => updateBlock(b.id, fn);
+    const onUp   = () => moveBlock(i, -1);
+    const onDown = () => moveBlock(i,  1);
+    const onDel  = () => removeBlock(b.id);
 
     switch (b.type) {
       case "pi":    return <PIView    key={b.id} b={b} set={set} onUp={onUp} onDown={onDown} onDel={onDel} />;

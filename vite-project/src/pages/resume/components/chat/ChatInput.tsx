@@ -31,8 +31,12 @@ export function ChatInput({ value, onChange, onSend, isStreaming, color }: ChatI
   useEffect(() => {
     const ta = textareaRef.current;
     if (ta) {
-      ta.style.height = "auto";
-      ta.style.height = `${Math.min(ta.scrollHeight, 112)}px`; // max 28px * 4 rows
+      const newHeight = Math.min(ta.scrollHeight, 112); // max 28px * 4 rows
+      // 仅在高度变化时更新，避免不必要的重排
+      if (ta.style.height !== `${newHeight}px`) {
+        ta.style.height = "auto";
+        ta.style.height = `${newHeight}px`;
+      }
     }
   }, [value]);
 

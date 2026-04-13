@@ -188,8 +188,14 @@ export function useContentEditable({
 
   // ── 执行文本格式化 ────────────────────────────────────────────────────────
   /**
-   * 执行 bold/italic/color 命令
-   * 先恢复保存的选区，再执行 execCommand
+   * 执行 bold/italic/color 格式化
+   *
+   * 注意：bold/italic/foreColor 没有完全兼容的现代替代方案，
+   * document.execCommand 虽已废弃，但所有浏览器仍支持。
+   * 未来可迁移到 Selection API + CSS class 的方式。
+   *
+   * @param cmd - 格式化命令
+   * @param value - 颜色值（仅 color 命令需要）
    */
   const handleFormat = useCallback((cmd: "bold" | "italic" | "color", value?: string) => {
     const el = ref.current;
@@ -201,9 +207,13 @@ export function useContentEditable({
       sel.removeAllRanges();
       sel.addRange(r);
     }
-    if (cmd === "bold") document.execCommand("bold");
-    else if (cmd === "italic") document.execCommand("italic");
-    else if (cmd === "color" && value) document.execCommand("foreColor", false, value);
+    if (cmd === "bold") {
+      document.execCommand("bold");
+    } else if (cmd === "italic") {
+      document.execCommand("italic");
+    } else if (cmd === "color" && value) {
+      document.execCommand("foreColor", false, value);
+    }
     onCommit(el.innerHTML);
   }, [onCommit]);
 

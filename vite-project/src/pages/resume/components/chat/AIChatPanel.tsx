@@ -1,13 +1,27 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { Bot, GripVertical, Sparkles, Trash2, X } from "lucide-react";
 import { useAIChat } from "../../hooks/useAIChat";
 import { ChatMessage, StreamingIndicator } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { useResume } from "../../useResume";
+import { toast } from "sonner";
 
 type AIChatPanelProps = {
   onClose: () => void;
 };
+
+interface ChatHeaderProps {
+  color: string;
+  onClose: () => void;
+  onClear: () => void;
+  onResizeStart: (e: React.MouseEvent) => void;
+  canClear: boolean;
+  isStreaming: boolean;
+}
+
+interface ChatEmptyProps {
+  color: string;
+}
 
 /**
  * AIChatPanel - AI 助手聊天面板
@@ -22,7 +36,7 @@ type AIChatPanelProps = {
  * @param onClose - 关闭面板回调
  */
 export function AIChatPanel({ onClose }: AIChatPanelProps) {
-  const { color } = useResume();
+  const { color, importFromJson } = useResume();
   const {
     messages,
     input,
@@ -33,11 +47,29 @@ export function AIChatPanel({ onClose }: AIChatPanelProps) {
     setPanelSize,
     sendMessage,
     clearMessages,
+    tryParseJson,
   } = useAIChat();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const resizeStartRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
+  // 记录最近一次自动导入的 assistant 消息 ID，避免重复导入
+  const lastParsedMsgIdRef = useRef<string | null>(null);
+
+  // ── 新消息到达时自动尝试导入 JSON ─────────────────────────────────────────
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const last = messages[messages.length - 1];
+    // 只处理新的 assistant 消息（避免重复解析同一消息）
+    if (last.role !== "assistant" || last.id === lastParsedMsgIdRef.current) return;
+    lastParsedMsgIdRef.current = last.id;
+
+    const data = tryParseJson(last.content);
+    if (data) {
+      importFromJson(data);
+      toast.success("简历已从 AI 响应中导入");
+    }
+  }, [messages, tryParseJson, importFromJson]);
 
   // ── 拖拽调整大小 ─────────────────────────────────────────────────────────
   const handleResizeStart = (e: React.MouseEvent) => {
@@ -98,15 +130,15 @@ export function AIChatPanel({ onClose }: AIChatPanelProps) {
         {messages.length === 0 && !streamingContent && (
           <ChatEmpty color={color} />
         )}
-        {messages.map((msg, i) => (
-          <ChatMessage key={i} message={msg} color={color} />
+        {messages.map((msg) => (
+          <ChatMessage key={msg.id} message={msg} color={color} />
         ))}
         {isStreaming && !streamingContent && (
           <StreamingIndicator color={color} />
         )}
         {streamingContent && (
           <ChatMessage
-            message={{ role: "assistant", content: streamingContent }}
+            message={{ id: "streaming", role: "assistant", content: streamingContent }}
             color={color}
             isStreaming
           />

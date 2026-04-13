@@ -5,6 +5,25 @@ import { useContentEditable } from "../../hooks/useContentEditable";
 import { BadgeInsertPanel } from "./BadgeInsertPanel";
 import { TextFormatPanel } from "./TextFormatPanel";
 
+/**
+ * clampToViewport - 将面板位置限制在视口内
+ *
+ * @param x - 面板期望的左坐标
+ * @param y - 面板期望的顶坐标
+ * @param panelW - 面板宽度
+ * @param panelH - 面板高度
+ * @param offset - 偏移量（防止紧贴边缘）
+ * @returns 限制后的 { x, y }
+ */
+function clampToViewport(x: number, y: number, panelW: number, panelH: number, offset = 8): { x: number; y: number } {
+  const vw = globalThis.innerWidth;
+  const vh = globalThis.innerHeight;
+  return {
+    x: Math.min(Math.max(offset, x), vw - panelW - offset),
+    y: Math.min(Math.max(offset, y), vh - panelH - offset),
+  };
+}
+
 type CEProps = {
   html: string;
   onCommit: (h: string) => void;
@@ -74,49 +93,76 @@ export function CE({ html, onCommit, className, placeholder }: CEProps) {
         onPaste={(e) => {
           e.preventDefault();
           const text = e.clipboardData?.getData("text/plain") ?? "";
-          if (text) document.execCommand("insertText", false, text);
+          if (!text) return;
+          // 使用现代 Selection/Range API 替代已废弃的 execCommand("insertText")
+          const sel = document.getSelection();
+          if (!sel?.rangeCount) return;
+          const range = sel.getRangeAt(0);
+          range.deleteContents();
+          range.insertNode(document.createTextNode(text));
+          // 将光标移动到插入文本之后
+          range.collapse(false);
+          sel.removeAllRanges();
+          sel.addRange(range);
         }}
       />
 
       {/* 文本格式工具栏（通过 Portal 渲染到 body） */}
-      {formatPanelOpen && createPortal(
-        <div
-          className="fixed z-50"
-          style={{
-            left: formatPanelPos.x,
-            top: formatPanelPos.y - 8,
-            transform: "translate(-50%, -100%)",
-          }}
-        >
-          <TextFormatPanel
-            onFormat={handleFormat}
-            onClose={handleFormatPanelClose}
-            primaryColor={color}
-          />
-        </div>,
-        document.body
-      )}
-      {panelOpen && createPortal(
-        <div
-          data-badge-insert-panel
-          className="fixed z-50 rounded-md border bg-popover p-0 shadow-lg"
-          style={{ left: panelPos.x, top: panelPos.y }}
-          role="dialog"
-          aria-label="Insert badge"
-        >
-          <BadgeInsertPanel
-            key={panelMode === "edit" ? `edit-${editState?.text ?? ""}` : "insert"}
-            onConfirm={handleBadgeConfirm}
-            onClose={handlePanelClose}
-            color={color}
-            lightColor={lightColor}
-            initialVariant={editState?.variant}
-            initialText={editState?.text}
-            isEdit={panelMode === "edit"}
-          />
-        </div>,
-        document.body
-      )}
+      {formatPanelOpen && (() => {
+        // 格式工具栏估算尺寸（实际由内容决定，这里用典型值做初始边界约束）
+        const FORMAT_H = 40;
+        const FORMAT_W = 220;
+        const pos = clampToViewport(
+          formatPanelPos.x,
+          formatPanelPos.y - 8,
+          FORMAT_W,
+          FORMAT_H
+        );
+        return createPortal(
+          <div
+            className="fixed z-50"
+            style={{
+              left: pos.x,
+              top: pos.y,
+              transform: "translate(-50%, -100%)",
+            }}
+          >
+            <TextFormatPanel
+              onFormat={handleFormat}
+              onClose={handleFormatPanelClose}
+              primaryColor={color}
+            />
+          </div>,
+          document.body
+        );
+      })()}
+      {panelOpen && (() => {
+        // 徽章面板尺寸：w-64 = 16rem ≈ 256px，height ≈ 160px
+        const BADGE_W = 256;
+        const BADGE_H = 160;
+        const pos = clampToViewport(panelPos.x, panelPos.y, BADGE_W, BADGE_H);
+        return createPortal(
+          <div
+            data-badge-insert-panel
+            className="fixed z-50 rounded-md border bg-popover p-0 shadow-lg"
+            style={{ left: pos.x, top: pos.y }}
+            role="dialog"
+            aria-label="Insert badge"
+          >
+            <BadgeInsertPanel
+              key={panelMode === "edit" ? `edit-${editState?.text ?? ""}` : "insert"}
+              onConfirm={handleBadgeConfirm}
+              onClose={handlePanelClose}
+              color={color}
+              lightColor={lightColor}
+              initialVariant={editState?.variant}
+              initialText={editState?.text}
+              isEdit={panelMode === "edit"}
+            />
+          </div>,
+          document.body
+        );
+      })()}
     </>
   );
 }

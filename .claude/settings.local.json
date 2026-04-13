@@ -8,7 +8,11 @@
       "Bash(npm list:*)",
       "Bash(git diff:*)",
       "Bash(wc -l /Users/binjieye/Projects/File-Upload/vite-project/src/pages/**/*.tsx /Users/binjieye/Projects/File-Upload/vite-project/src/pages/**/**/*.tsx)",
-      "Bash(wc -l /Users/binjieye/Projects/File-Upload/vite-project/src/components/**/*.tsx)"
+      "Bash(wc -l /Users/binjieye/Projects/File-Upload/vite-project/src/components/**/*.tsx)",
+      "Bash(pnpm tsc:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx vite:*)"
     ]
   }
 }

@@ -57,6 +57,10 @@ export function ChatMessage({ message, color, isStreaming }: ChatMessageProps) {
  * StreamingIndicator - 流式输出加载指示器
  * 显示三个跳动的圆点，表示 AI 正在响应
  */
+interface StreamingIndicatorProps {
+  color: string;
+}
+
 export function StreamingIndicator({ color }: StreamingIndicatorProps) {
   return (
     <div className="flex gap-2.5 justify-start">
